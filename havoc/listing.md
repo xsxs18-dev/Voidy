@@ -45,7 +45,7 @@ Voidy frees up storage and keeps your jailbroken device tidy – with a clean, n
 - Automatic cleaning in the background, from every 6 hours to weekly
 - Cleaning history with chart
 - Home screen quick actions: Smart Clean and Respring
-- Light & dark mode, English & German
+- Native dark interface, English & German
 
 **Safety**
 Voidy only removes files from clearly defined locations. Photos, messages, contacts, keychain, mail and the package database are never touched. When you uninstall Voidy, every tweak and daemon it disabled is re-enabled automatically.

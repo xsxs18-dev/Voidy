@@ -4,7 +4,7 @@
 
 <p align="center">
 A lightweight system cleaner for <b>rootless</b> and <b>roothide</b> jailbreaks.<br>
-Native, minimal iOS design in light and dark mode.
+Native, minimal iOS design with a dark look.
 </p>
 
 <p align="center">
