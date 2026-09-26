@@ -1023,12 +1023,10 @@ static int CmdRestoreAll(void) {
 
 #pragma mark - Migration
 
-// Carries data over from the app's previous names.
+// Carries data over from the app's previous name.
 static void MigrateLegacyData(void) {
     NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray *pairs = @[ @[ @"/var/mobile/Library/Voidly", @"/var/mobile/Library/Voidy" ],
-                        @[ @"/var/mobile/Library/Purify", @"/var/mobile/Library/Voidy" ],
-                        @[ @"/Library/Voidly", @"/Library/Voidy" ],
+    NSArray *pairs = @[ @[ @"/var/mobile/Library/Purify", @"/var/mobile/Library/Voidy" ],
                         @[ @"/Library/Purify", @"/Library/Voidy" ] ];
     for (NSArray *pair in pairs) {
         NSString *legacy = JB(pair[0]), *current = JB(pair[1]);

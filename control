@@ -10,7 +10,7 @@ Maintainer: xsxs18
 Author: xsxs18
 Section: Utilities
 Depends: firmware (>= 15.0)
-Conflicts: com.xsxs18.purify, com.xsxs18.voidly
-Replaces: com.xsxs18.purify, com.xsxs18.voidly
-Provides: com.xsxs18.purify, com.xsxs18.voidly
+Conflicts: com.xsxs18.purify
+Replaces: com.xsxs18.purify
+Provides: com.xsxs18.purify
 Recommends: uikittools
