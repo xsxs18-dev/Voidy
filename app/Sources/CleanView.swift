@@ -14,23 +14,29 @@ struct CleanView: View {
 
     var body: some View {
         NavigationView {
-            ZStack(alignment: .bottom) {
-                AuroraBackground()
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 22) {
-                        ForEach(Risk.allCases, id: \.self) { risk in
-                            section(for: risk)
+            List {
+                ForEach(Risk.allCases, id: \.self) { risk in
+                    let categories = CleanCategory.all.filter { $0.risk == risk }
+                    Section {
+                        ForEach(categories) { category in
+                            NavigationLink {
+                                CategoryDetailView(category: category)
+                            } label: {
+                                CategoryRow(category: category)
+                            }
+                        }
+                    } header: {
+                        Text(LocalizedStringKey(risk.title))
+                    } footer: {
+                        if risk == .privacy {
+                            Text("Privacy items are never cleaned automatically.")
                         }
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.top, 8)
-                    .padding(.bottom, 120)
                 }
-                .refreshable { await store.scan() }
-
-                cleanBar
             }
+            .listStyle(.insetGrouped)
             .navigationTitle("Clean")
+            .refreshable { await store.scan() }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -48,6 +54,18 @@ struct CleanView: View {
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                BottomActionBar(role: includesPrivacy ? .destructive : nil,
+                                disabled: store.selection.isEmpty || store.isCleaning || store.isScanning) {
+                    Haptics.tap()
+                    if confirmClean || includesPrivacy { confirming = true } else { startClean() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if store.isCleaning { ProgressView() }
+                        store.isCleaning ? Text("Cleaning…") : Text("Clean \(Format.bytes(selectedBytes))")
+                    }
+                }
+            }
         }
         .navigationViewStyle(.stack)
         .sheet(item: $result) { CleanResultView(response: $0) }
@@ -61,50 +79,6 @@ struct CleanView: View {
         }
     }
 
-    private func section(for risk: Risk) -> some View {
-        let categories = CleanCategory.all.filter { $0.risk == risk }
-        let total = categories.compactMap { store.results[$0.id]?.bytes }.reduce(0, +)
-        return VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: risk.title, trailing: Format.bytes(total))
-            VStack(spacing: 0) {
-                ForEach(categories) { category in
-                    NavigationLink {
-                        CategoryDetailView(category: category)
-                    } label: {
-                        CategoryRow(category: category)
-                    }
-                    .buttonStyle(.plain)
-                    if category.id != categories.last?.id {
-                        Divider().background(Color.white.opacity(0.08)).padding(.leading, 66)
-                    }
-                }
-            }
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.white.opacity(0.1)))
-        }
-    }
-
-    private var cleanBar: some View {
-        Button {
-            Haptics.tap()
-            if confirmClean || includesPrivacy { confirming = true } else { startClean() }
-        } label: {
-            HStack {
-                if store.isCleaning {
-                    ProgressView().tint(.white)
-                } else {
-                    Image(systemName: "sparkles")
-                }
-                store.isCleaning ? Text("Cleaning…") : Text("Clean \(Format.bytes(selectedBytes))")
-            }
-        }
-        .buttonStyle(GlowButtonStyle(colors: includesPrivacy ? [Theme.pink, Theme.violet] : [Theme.violet, Theme.blue, Theme.cyan]))
-        .disabled(store.selection.isEmpty || store.isCleaning || store.isScanning)
-        .opacity(store.selection.isEmpty ? 0.5 : 1)
-        .padding(.horizontal, 24)
-        .padding(.bottom, 12)
-    }
-
     private func startClean() {
         Task { result = await store.clean(store.selection) }
     }
@@ -114,46 +88,36 @@ struct CategoryRow: View {
     @EnvironmentObject private var store: AppStore
     let category: CleanCategory
 
-    private var isOn: Binding<Bool> {
-        Binding(get: { store.selection.contains(category.id) },
-                set: { on in
-                    Haptics.tap()
-                    if on { store.selection.insert(category.id) } else { store.selection.remove(category.id) }
-                })
-    }
+    private var selected: Bool { store.selection.contains(category.id) }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
+            Button {
+                Haptics.tap()
+                if selected { store.selection.remove(category.id) } else { store.selection.insert(category.id) }
+            } label: {
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundColor(selected ? Theme.accent : Color(.tertiaryLabel))
+            }
+            .buttonStyle(.borderless)
+
             IconBadge(symbol: category.icon, colors: category.colors)
-            VStack(alignment: .leading, spacing: 3) {
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text(LocalizedStringKey(category.title))
-                    .font(.system(.body, design: .rounded).weight(.semibold))
-                    .foregroundColor(.white)
                 Text(LocalizedStringKey(category.subtitle))
                     .font(.caption)
-                    .foregroundColor(Theme.secondaryText)
+                    .foregroundColor(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 6)
-            VStack(alignment: .trailing, spacing: 2) {
-                if store.isScanning && store.results[category.id] == nil {
-                    ProgressView().scaleEffect(0.7)
-                } else {
-                    Text(Format.bytes(store.results[category.id]?.bytes ?? 0))
-                        .font(.system(.subheadline, design: .rounded).weight(.semibold).monospacedDigit())
-                        .foregroundColor(.white)
-                    Text("\(Int(store.results[category.id]?.files ?? 0)) files")
-                        .font(.caption2.monospacedDigit())
-                        .foregroundColor(Theme.secondaryText)
-                }
+            if store.isScanning && store.results[category.id] == nil {
+                ProgressView()
+            } else {
+                SizeLabel(bytes: store.results[category.id]?.bytes ?? 0)
             }
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(category.risk.tint)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
     }
 }
 
@@ -165,100 +129,80 @@ struct CategoryDetailView: View {
     private var isAppList: Bool { category.id == "app_caches" }
 
     var body: some View {
-        ZStack {
-            AuroraBackground()
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    GlassCard {
-                        HStack(spacing: 16) {
-                            IconBadge(symbol: category.icon, colors: category.colors, size: 52)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(Format.bytes(result?.bytes ?? 0))
-                                    .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
-                                Text(LocalizedStringKey(category.subtitle))
-                                    .font(.footnote)
-                                    .foregroundColor(Theme.secondaryText)
-                            }
-                        }
-                    }
-
-                    if isAppList && !store.exclusions.isEmpty {
-                        Text("\(store.exclusions.count) apps are excluded and not shown.")
+        List {
+            Section {
+                HStack(spacing: 14) {
+                    IconBadge(symbol: category.icon, colors: category.colors, size: 44)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Format.bytes(result?.bytes ?? 0))
+                            .font(.title2.weight(.bold).monospacedDigit())
+                        Text("\(Int(result?.files ?? 0)) files")
                             .font(.footnote)
-                            .foregroundColor(Theme.secondaryText)
-                            .padding(.horizontal, 4)
-                    }
-
-                    if let items = result?.items, !items.isEmpty {
-                        SectionHeader(title: "Breakdown", trailing: "\(items.count)")
-                        VStack(spacing: 0) {
-                            ForEach(items) { item in
-                                itemRow(item)
-                                if item.id != items.last?.id {
-                                    Divider().background(Color.white.opacity(0.08)).padding(.leading, 60)
-                                }
-                            }
-                        }
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    } else {
-                        GlassCard {
-                            HStack {
-                                Image(systemName: "checkmark.seal.fill").foregroundColor(Theme.mint)
-                                Text("Nothing to clean here.")
-                            }
-                        }
+                            .foregroundColor(.secondary)
                     }
                 }
-                .padding(18)
+                .padding(.vertical, 4)
+            } footer: {
+                Text(LocalizedStringKey(category.subtitle))
+            }
+
+            if let items = result?.items, !items.isEmpty {
+                Section {
+                    ForEach(items) { item in
+                        itemRow(item)
+                    }
+                } header: {
+                    Text("Breakdown")
+                } footer: {
+                    if isAppList {
+                        store.exclusions.isEmpty
+                            ? Text("Swipe left on an app to exclude it from cleaning.")
+                            : Text("\(store.exclusions.count) apps are excluded and not shown.")
+                    }
+                }
+            } else {
+                Section {
+                    Label("Nothing to clean here.", systemImage: "checkmark.circle")
+                        .foregroundColor(.secondary)
+                }
             }
         }
+        .listStyle(.insetGrouped)
         .navigationTitle(LocalizedStringKey(category.title))
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    @ViewBuilder
     private func itemRow(_ item: ScanItem) -> some View {
-        let share = (result?.bytes ?? 0) > 0 ? Double(item.bytes) / Double(result?.bytes ?? 1) : 0
         HStack(spacing: 12) {
-            if isAppList, let icon = AppMeta.icon(for: item.name) {
-                Image(uiImage: icon)
-                    .resizable()
-                    .frame(width: 34, height: 34)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            if isAppList {
+                AppIconView(bundleID: item.name)
             } else {
-                IconBadge(symbol: category.icon, colors: category.colors, size: 34)
+                IconBadge(symbol: category.icon, colors: category.colors)
             }
-            VStack(alignment: .leading, spacing: 5) {
-                Text(isAppList ? AppMeta.name(for: item.name) : item.name)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.08))
-                        Capsule()
-                            .fill(LinearGradient(colors: category.colors, startPoint: .leading, endPoint: .trailing))
-                            .frame(width: max(4, geo.size.width * CGFloat(share)))
-                    }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isAppList ? AppMeta.name(for: item.name) : item.name).lineLimit(1)
+                if isAppList {
+                    Text(item.name)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
-                .frame(height: 5)
             }
-            Text(Format.bytes(item.bytes))
-                .font(.footnote.monospacedDigit())
-                .foregroundColor(Theme.secondaryText)
-                .frame(minWidth: 64, alignment: .trailing)
+            Spacer(minLength: 6)
+            SizeLabel(bytes: item.bytes)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .contextMenu {
+        .swipeActions(edge: .trailing) {
             if isAppList {
                 Button {
                     store.toggleExclusion(item.name)
                     Task { await store.scan() }
                 } label: {
-                    Label(LocalizedStringKey(store.exclusions.contains(item.name) ? "Include again" : "Exclude from cleaning"),
-                          systemImage: "hand.raised")
+                    Label("Exclude", systemImage: "hand.raised")
                 }
+                .tint(Theme.orange)
             }
+        }
+        .contextMenu {
             Button {
                 UIPasteboard.general.string = item.path
             } label: {

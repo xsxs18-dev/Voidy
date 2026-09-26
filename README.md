@@ -48,6 +48,10 @@ Eine Regel-Engine, die komplett **auf dem Gerät** läuft (keine Cloud, kein Tra
 - **Launch-Daemons** des Jailbreaks starten/stoppen (Kern-Dienste von Dopamine/roothide/ElleKit sind gesperrt)
 - **Neustart-Optionen**: Respring, uicache, Userspace-Reboot, ldrestart, Reboot
 
+### Design
+Natives, minimalistisches iOS-Design wie in den Einstellungen oder Filza: gruppierte Listen, Systemfarben,
+Wischgesten, Suche und Pull-to-Refresh – automatisch im Hell- und Dunkelmodus.
+
 ### Sonstiges
 - **Automatische Reinigung** per LaunchDaemon (6 h … wöchentlich), Datenschutz-Kategorien sind davon ausgeschlossen
 - **Verlauf & Statistik** (inkl. automatischer Reinigungen)
@@ -80,8 +84,9 @@ make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
 make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide THEOS=/pfad/zu/roothide-theos
 ```
 
-Einfacher: Jeder Push baut beide Pakete über **GitHub Actions** (`.github/workflows/build.yml`). Die fertigen `.deb`s liegen dann unter
-*Actions → Build → Artifacts* (`purify-rootless`, `purify-roothide`).
+Einfacher: Jeder Push baut beide Pakete über **GitHub Actions** und veröffentlicht sie automatisch als
+**Release** (`v<Version>.<Build-Nummer>`, z. B. `v1.1.12`). Die neuesten `.deb`s findest du also immer unter
+**Releases** rechts auf der Repo-Seite.
 
 ## Installation
 

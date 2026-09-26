@@ -1,9 +1,12 @@
-name: Build
+name: Build & Release
 
 on:
   push:
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -17,8 +20,20 @@ jobs:
             theos: theos/theos
           - scheme: roothide
             theos: roothide/theos
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Compute version
+        id: version
+        run: |
+          base=$(grep '^Version:' control | cut -d' ' -f2)
+          version="$base.${{ github.run_number }}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" app/Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" app/Resources/Info.plist
 
       - name: Install build tools
         run: |
@@ -31,14 +46,67 @@ jobs:
           echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
 
       - name: Build package
-        run: make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }}
+        run: make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }} PACKAGE_VERSION=$VERSION
 
-      - name: Inspect package
+      - name: Rename & inspect package
         run: |
-          ls -la packages
-          for deb in packages/*.deb; do dpkg-deb --info "$deb"; dpkg-deb --contents "$deb"; done
+          mkdir -p out
+          for deb in packages/*.deb; do
+            arch=$(dpkg-deb -f "$deb" Architecture)
+            name="purify_${VERSION}_${{ matrix.scheme }}_${arch}.deb"
+            cp "$deb" "out/$name"
+            dpkg-deb --info "out/$name"
+            dpkg-deb --contents "out/$name"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
           name: purify-${{ matrix.scheme }}
-          path: packages/*.deb
+          path: out/*.deb
+
+  release:
+    name: Release
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Write release notes
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          {
+            echo "## Purify ${{ needs.build.outputs.version }}"
+            echo
+            echo "| Datei | Jailbreak |"
+            echo "|---|---|"
+            for f in dist/*.deb; do
+              n=$(basename "$f")
+              case "$n" in
+                *roothide*) echo "| \`$n\` | roothide (Dopamine roothide / Bootstrap) |" ;;
+                *) echo "| \`$n\` | rootless (Dopamine, palera1n rootless, …) |" ;;
+              esac
+            done
+            echo
+            echo "Installation: passende \`.deb\` mit Sileo, Zebra oder Filza installieren."
+            echo
+            if [ -n "$COMMIT_MESSAGE" ]; then
+              echo "### Änderungen"
+              echo
+              echo "$COMMIT_MESSAGE" | grep -v -e '^Co-Authored-By:' -e '^Claude-Session:'
+            fi
+          } > notes.md
+          cat notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: Purify ${{ needs.build.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body_path: notes.md
+          files: dist/*.deb
+          make_latest: true

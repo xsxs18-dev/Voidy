@@ -5,8 +5,8 @@ struct ToolsView: View {
     @EnvironmentObject private var store: AppStore
     @State private var powerAction: PowerAction?
 
-    enum PowerAction: String, Identifiable {
-        case respring, uicache, userspace, reboot, ldrestart
+    enum PowerAction: String, Identifiable, CaseIterable {
+        case respring, uicache, userspace, ldrestart, reboot
         var id: String { rawValue }
 
         var title: String {
@@ -29,13 +29,13 @@ struct ToolsView: View {
             }
         }
 
-        var colors: [Color] {
+        var color: Color {
             switch self {
-            case .respring: return [Theme.violet, Theme.indigo]
-            case .uicache: return [Theme.teal, Theme.cyan]
-            case .userspace: return [Theme.blue, Theme.violet]
-            case .reboot: return [Theme.pink, Theme.orange]
-            case .ldrestart: return [Theme.amber, Theme.orange]
+            case .respring: return Theme.indigo
+            case .uicache: return Theme.teal
+            case .userspace: return Theme.blue
+            case .reboot: return Theme.red
+            case .ldrestart: return Theme.orange
             }
         }
 
@@ -50,35 +50,38 @@ struct ToolsView: View {
 
     var body: some View {
         NavigationView {
-            ZStack {
-                AuroraBackground()
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 20) {
-                        SectionHeader(title: "Storage & packages")
-                        VStack(spacing: 12) {
-                            toolLink(.largeFiles, title: "Large files", subtitle: "Find what's eating your storage",
-                                     icon: "doc.viewfinder.fill", colors: [Theme.amber, Theme.orange]) { LargeFilesView() }
-                            toolLink(.orphans, title: "Orphaned packages", subtitle: "Dependencies nothing needs anymore",
-                                     icon: "shippingbox.and.arrow.backward.fill", colors: [Theme.orange, Theme.pink]) { OrphansView() }
-                            toolLink(.languages, title: "Unused languages", subtitle: "Localizations in jailbreak apps & tweaks",
-                                     icon: "character.bubble.fill", colors: [Theme.teal, Theme.mint]) { LanguagesView() }
-                            toolLink(.daemons, title: "Launch daemons", subtitle: "Start or stop jailbreak background services",
-                                     icon: "gearshape.2.fill", colors: [Theme.blue, Theme.indigo]) { DaemonsView() }
-                        }
+            List {
+                Section {
+                    toolLink(.largeFiles, title: "Large files", subtitle: "Find what's eating your storage",
+                             icon: "doc.viewfinder.fill", color: Theme.orange) { LargeFilesView() }
+                    toolLink(.orphans, title: "Orphaned packages", subtitle: "Dependencies nothing needs anymore",
+                             icon: "shippingbox.fill", color: Theme.pink) { OrphansView() }
+                    toolLink(.languages, title: "Unused languages", subtitle: "Localizations in jailbreak apps & tweaks",
+                             icon: "character.bubble.fill", color: Theme.teal) { LanguagesView() }
+                    toolLink(.daemons, title: "Launch daemons", subtitle: "Start or stop jailbreak background services",
+                             icon: "gearshape.2.fill", color: Theme.gray) { DaemonsView() }
+                } header: {
+                    Text("Storage & packages")
+                }
 
-                        SectionHeader(title: "Power")
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            ForEach([PowerAction.respring, .uicache, .userspace, .ldrestart, .reboot]) { action in
-                                QuickTile(title: action.title, icon: action.icon, colors: action.colors) {
-                                    powerAction = action
-                                }
+                Section {
+                    ForEach(PowerAction.allCases) { action in
+                        Button {
+                            Haptics.tap()
+                            powerAction = action
+                        } label: {
+                            HStack(spacing: 12) {
+                                IconBadge(symbol: action.icon, colors: [action.color])
+                                Text(LocalizedStringKey(action.title))
+                                    .foregroundColor(action == .reboot ? Theme.red : .primary)
                             }
                         }
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.bottom, 24)
+                } header: {
+                    Text("Power")
                 }
             }
+            .listStyle(.insetGrouped)
             .navigationTitle("Tools")
         }
         .navigationViewStyle(.stack)
@@ -95,27 +98,18 @@ struct ToolsView: View {
     }
 
     private func toolLink<Destination: View>(_ route: ToolRoute, title: String, subtitle: String, icon: String,
-                                             colors: [Color], @ViewBuilder destination: () -> Destination) -> some View {
+                                             color: Color, @ViewBuilder destination: () -> Destination) -> some View {
         NavigationLink(tag: route, selection: $store.toolRoute, destination: destination) {
-            GlassCard(padding: 14) {
-                HStack(spacing: 14) {
-                    IconBadge(symbol: icon, colors: colors, size: 42)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(LocalizedStringKey(title))
-                            .font(.system(.body, design: .rounded).weight(.semibold))
-                            .foregroundColor(.white)
-                        Text(LocalizedStringKey(subtitle))
-                            .font(.caption)
-                            .foregroundColor(Theme.secondaryText)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.bold))
-                        .foregroundColor(Theme.secondaryText)
+            HStack(spacing: 12) {
+                IconBadge(symbol: icon, colors: [color])
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LocalizedStringKey(title))
+                    Text(LocalizedStringKey(subtitle))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
         }
-        .buttonStyle(.plain)
     }
 }
 
@@ -129,45 +123,41 @@ struct LargeFilesView: View {
     @State private var pendingDelete: LargeFile?
 
     var body: some View {
-        ZStack {
-            AuroraBackground()
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    Picker("Minimum size", selection: $threshold) {
-                        Text("50 MB").tag(Int64(50))
-                        Text("100 MB").tag(Int64(100))
-                        Text("250 MB").tag(Int64(250))
-                        Text("1 GB").tag(Int64(1024))
-                    }
-                    .pickerStyle(.segmented)
+        List {
+            Section {
+                Picker("Minimum size", selection: $threshold) {
+                    Text("50 MB").tag(Int64(50))
+                    Text("100 MB").tag(Int64(100))
+                    Text("250 MB").tag(Int64(250))
+                    Text("1 GB").tag(Int64(1024))
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+            }
 
-                    if loading {
-                        VStack(spacing: 12) {
-                            AIOrb(active: true, size: 90)
-                            Text("Searching your storage…").foregroundColor(Theme.secondaryText)
-                        }
-                        .padding(40)
-                    } else if files.isEmpty {
-                        GlassCard { Text("No files above this size.").foregroundColor(Theme.secondaryText) }
-                    } else {
-                        SectionHeader(title: "Results", trailing: Format.bytes(files.reduce(0) { $0 + $1.bytes }))
-                        VStack(spacing: 0) {
-                            ForEach(files) { file in
-                                row(file)
-                                if file.id != files.last?.id {
-                                    Divider().background(Color.white.opacity(0.08)).padding(.leading, 60)
-                                }
-                            }
-                        }
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                        Text("Photos, messages and other personal databases are never listed. Long-press a file for options.")
-                            .font(.caption)
-                            .foregroundColor(Theme.secondaryText)
+            Section {
+                if loading {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Searching your storage…").foregroundColor(.secondary)
+                    }
+                } else if files.isEmpty {
+                    Text("No files above this size.").foregroundColor(.secondary)
+                } else {
+                    ForEach(files) { file in
+                        row(file)
                     }
                 }
-                .padding(18)
+            } header: {
+                if !files.isEmpty && !loading {
+                    Text("\(files.count) files · \(Format.bytes(files.reduce(0) { $0 + $1.bytes }))")
+                }
+            } footer: {
+                Text("Photos, messages and other personal databases are never listed. Swipe left to delete.")
             }
         }
+        .listStyle(.insetGrouped)
         .navigationTitle("Large files")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: threshold) { await load() }
@@ -182,29 +172,25 @@ struct LargeFilesView: View {
 
     private func row(_ file: LargeFile) -> some View {
         HStack(spacing: 12) {
-            if let owner = file.owner, let icon = AppMeta.icon(for: owner) {
-                Image(uiImage: icon).resizable().frame(width: 34, height: 34)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            if let owner = file.owner {
+                AppIconView(bundleID: owner)
             } else {
-                IconBadge(symbol: symbol(for: file.path), colors: [Theme.amber, Theme.orange], size: 34)
+                IconBadge(symbol: symbol(for: file.path), colors: [Theme.gray])
             }
-            VStack(alignment: .leading, spacing: 3) {
-                Text((file.path as NSString).lastPathComponent)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text((file.path as NSString).lastPathComponent).lineLimit(1)
                 Text(file.owner.map { AppMeta.name(for: $0) } ?? (file.path as NSString).deletingLastPathComponent)
                     .font(.caption)
-                    .foregroundColor(Theme.secondaryText)
+                    .foregroundColor(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
             Spacer(minLength: 6)
-            Text(Format.bytes(file.bytes))
-                .font(.footnote.monospacedDigit().weight(.semibold))
+            SizeLabel(bytes: file.bytes)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .contentShape(Rectangle())
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) { pendingDelete = file } label: { Label("Delete", systemImage: "trash") }
+        }
         .contextMenu {
             Button { UIPasteboard.general.string = file.path } label: { Label("Copy path", systemImage: "doc.on.doc") }
             Button(role: .destructive) { pendingDelete = file } label: { Label("Delete", systemImage: "trash") }
@@ -257,59 +243,36 @@ struct OrphansView: View {
     @State private var confirm = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            AuroraBackground()
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    GlassCard {
-                        HStack(spacing: 14) {
-                            IconBadge(symbol: "shippingbox.and.arrow.backward.fill", colors: [Theme.orange, Theme.pink], size: 46)
-                            Text("Packages that were installed automatically as dependencies and aren't required by anything anymore.")
-                                .font(.footnote)
-                                .foregroundColor(Theme.secondaryText)
+        List {
+            Section {
+                if loading {
+                    HStack { Spacer(); ProgressView(); Spacer() }
+                } else if orphans.isEmpty {
+                    Label("No orphaned packages.", systemImage: "checkmark.circle")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(orphans) { orphan in
+                        HStack {
+                            Text(orphan.name).font(.system(.body, design: .monospaced))
+                            Spacer()
+                            Text(orphan.version).font(.caption).foregroundColor(.secondary)
                         }
-                    }
-                    if loading {
-                        ProgressView().frame(maxWidth: .infinity).padding(30)
-                    } else if orphans.isEmpty {
-                        GlassCard {
-                            HStack {
-                                Image(systemName: "checkmark.seal.fill").foregroundColor(Theme.mint)
-                                Text("No orphaned packages.")
-                            }
-                        }
-                    } else {
-                        SectionHeader(title: "Orphaned packages", trailing: "\(orphans.count)")
-                        VStack(spacing: 0) {
-                            ForEach(orphans) { orphan in
-                                HStack {
-                                    Text(orphan.name).font(.system(.subheadline, design: .monospaced))
-                                    Spacer()
-                                    Text(orphan.version).font(.caption).foregroundColor(Theme.secondaryText)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                if orphan.id != orphans.last?.id {
-                                    Divider().background(Color.white.opacity(0.08)).padding(.leading, 16)
-                                }
-                            }
-                        }
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                     }
                 }
-                .padding(18)
-                .padding(.bottom, 90)
-            }
-            if !orphans.isEmpty {
-                Button { confirm = true } label: { Label("Remove \(orphans.count) packages", systemImage: "trash") }
-                    .buttonStyle(GlowButtonStyle(colors: [Theme.orange, Theme.pink]))
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 12)
-                    .disabled(loading)
+            } footer: {
+                Text("Packages that were installed automatically as dependencies and aren't required by anything anymore.")
             }
         }
+        .listStyle(.insetGrouped)
         .navigationTitle("Orphaned packages")
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            if !orphans.isEmpty {
+                BottomActionBar(role: .destructive, disabled: loading, action: { confirm = true }) {
+                    Label("Remove \(orphans.count) packages", systemImage: "trash")
+                }
+            }
+        }
         .task { await load() }
         .confirmationDialog("Remove orphaned packages?", isPresented: $confirm, titleVisibility: .visible) {
             Button("Remove", role: .destructive) { Task { await remove() } }
@@ -354,57 +317,50 @@ struct LanguagesView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            AuroraBackground()
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    GlassCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(Format.bytes(report?.bytes ?? 0))
-                                .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
-                                .foregroundStyle(Theme.aiGradient)
-                            Text("in \(Int(report?.count ?? 0)) unused language folders of jailbreak apps and tweaks.")
-                                .font(.footnote)
-                                .foregroundColor(Theme.secondaryText)
-                            Text("Kept: \(keep.joined(separator: ", "))")
-                                .font(.caption.monospaced())
-                                .foregroundColor(Theme.mint)
-                        }
+        List {
+            Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Format.bytes(report?.bytes ?? 0))
+                            .font(.title2.weight(.bold).monospacedDigit())
+                        Text("in \(Int(report?.count ?? 0)) unused language folders of jailbreak apps and tweaks.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
                     }
-                    if let languages = report?.languages, !languages.isEmpty {
-                        SectionHeader(title: "By language")
-                        VStack(spacing: 0) {
-                            let sorted = languages.sorted { $0.value > $1.value }
-                            ForEach(sorted, id: \.key) { entry in
-                                HStack {
-                                    Text(Locale.current.localizedString(forLanguageCode: entry.key) ?? entry.key)
-                                    Spacer()
-                                    Text(Format.bytes(entry.value)).font(.footnote.monospacedDigit())
-                                        .foregroundColor(Theme.secondaryText)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 11)
-                            }
-                        }
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    }
-                    Text("System apps are never touched – removing files from them would break their code signature.")
-                        .font(.caption)
-                        .foregroundColor(Theme.secondaryText)
+                    Spacer()
+                    if loading { ProgressView() }
                 }
-                .padding(18)
-                .padding(.bottom, 90)
+                .padding(.vertical, 4)
+            } footer: {
+                Text("Kept: \(keep.joined(separator: ", "))")
             }
-            if (report?.count ?? 0) > 0 {
-                Button { confirm = true } label: { Label("Remove unused languages", systemImage: "trash") }
-                    .buttonStyle(GlowButtonStyle(colors: [Theme.teal, Theme.mint]))
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 12)
-                    .disabled(loading)
+
+            if let languages = report?.languages, !languages.isEmpty {
+                Section {
+                    ForEach(languages.sorted { $0.value > $1.value }, id: \.key) { entry in
+                        HStack {
+                            Text(Locale.current.localizedString(forLanguageCode: entry.key) ?? entry.key)
+                            Spacer()
+                            SizeLabel(bytes: entry.value)
+                        }
+                    }
+                } header: {
+                    Text("By language")
+                } footer: {
+                    Text("System apps are never touched – removing files from them would break their code signature.")
+                }
             }
         }
+        .listStyle(.insetGrouped)
         .navigationTitle("Unused languages")
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            if (report?.count ?? 0) > 0 {
+                BottomActionBar(role: .destructive, disabled: loading, action: { confirm = true }) {
+                    Label("Remove unused languages", systemImage: "trash")
+                }
+            }
+        }
         .task { await run(clean: false) }
         .confirmationDialog("Remove unused languages?", isPresented: $confirm, titleVisibility: .visible) {
             Button("Remove", role: .destructive) { Task { await run(clean: true) } }
@@ -416,12 +372,13 @@ struct LanguagesView: View {
     private func run(clean: Bool) async {
         loading = true
         defer { loading = false }
+        let keepArg = keep.joined(separator: ",")
         do {
             let result = try await store.helper.call(LanguageReport.self,
-                                                     ["languages", clean ? "clean" : "scan", "--keep", keep.joined(separator: ",")])
+                                                     ["languages", clean ? "clean" : "scan", "--keep", keepArg])
             if clean {
                 store.show(String(localized: "Freed \(Format.bytes(result.freed))"))
-                report = try await store.helper.call(LanguageReport.self, ["languages", "scan", "--keep", keep.joined(separator: ",")])
+                report = try await store.helper.call(LanguageReport.self, ["languages", "scan", "--keep", keepArg])
             } else {
                 report = result
             }
@@ -439,61 +396,41 @@ struct DaemonsView: View {
     @State private var loading = false
 
     var body: some View {
-        ZStack {
-            AuroraBackground()
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Only jailbreak daemons are listed. Core jailbreak services are locked to keep your device safe.")
-                        .font(.footnote)
-                        .foregroundColor(Theme.secondaryText)
-                        .padding(.horizontal, 4)
-                    if loading && daemons.isEmpty {
-                        ProgressView().frame(maxWidth: .infinity).padding(30)
-                    } else if daemons.isEmpty {
-                        GlassCard { Text("No launch daemons found.").foregroundColor(Theme.secondaryText) }
-                    } else {
-                        VStack(spacing: 0) {
-                            ForEach(daemons) { daemon in
-                                row(daemon)
-                                if daemon.id != daemons.last?.id {
-                                    Divider().background(Color.white.opacity(0.08)).padding(.leading, 16)
+        List {
+            Section {
+                if loading && daemons.isEmpty {
+                    HStack { Spacer(); ProgressView(); Spacer() }
+                } else if daemons.isEmpty {
+                    Text("No launch daemons found.").foregroundColor(.secondary)
+                } else {
+                    ForEach(daemons) { daemon in
+                        Toggle(isOn: Binding(get: { daemon.enabled }, set: { value in Task { await set(daemon, value) } })) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 5) {
+                                    if daemon.locked {
+                                        Image(systemName: "lock.fill").font(.caption2).foregroundColor(.secondary)
+                                    }
+                                    Text(daemon.label).lineLimit(1)
                                 }
+                                Text(daemon.program)
+                                    .font(.system(.caption2, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
                             }
                         }
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .disabled(daemon.locked)
                     }
                 }
-                .padding(18)
+            } footer: {
+                Text("Only jailbreak daemons are listed. Core jailbreak services are locked to keep your device safe.")
             }
         }
+        .listStyle(.insetGrouped)
         .navigationTitle("Launch daemons")
         .navigationBarTitleDisplayMode(.inline)
+        .refreshable { await load() }
         .task { await load() }
-    }
-
-    private func row(_ daemon: DaemonInfo) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    if daemon.locked {
-                        Image(systemName: "lock.fill").font(.caption2).foregroundColor(Theme.amber)
-                    }
-                    Text(daemon.label).font(.subheadline.weight(.semibold)).lineLimit(1)
-                }
-                Text(daemon.program)
-                    .font(.system(.caption2, design: .monospaced))
-                    .foregroundColor(Theme.secondaryText)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-            Spacer()
-            Toggle("", isOn: Binding(get: { daemon.enabled }, set: { value in Task { await set(daemon, value) } }))
-                .labelsHidden()
-                .tint(Theme.mint)
-                .disabled(daemon.locked)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
     }
 
     private func load() async {

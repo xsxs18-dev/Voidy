@@ -7,15 +7,11 @@ struct PurifyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store = AppStore()
 
-    init() {
-        Theme.configureUIKitAppearance()
-    }
-
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(store)
-                .preferredColorScheme(.dark)
+                .tint(Theme.accent)
         }
     }
 }
@@ -65,7 +61,6 @@ struct RootView: View {
                     .tabItem { Label("Settings", systemImage: "gearshape.fill") }
                     .tag(AppTab.settings)
             }
-            .accentColor(Theme.cyan)
 
             if let toast = store.toast {
                 ToastView(text: toast)
@@ -109,8 +104,7 @@ struct ToastView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.15)))
-        .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
+        .background(.regularMaterial, in: Capsule())
+        .shadow(color: .black.opacity(0.12), radius: 10, y: 3)
     }
 }
