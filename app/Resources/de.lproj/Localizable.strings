@@ -14,7 +14,7 @@
 "reclaimable" = "freigebbar";
 "Scan" = "Scannen";
 "Smart Clean" = "Smart Clean";
-"Purify Intelligence" = "Purify Intelligence";
+"Smart Insights" = "Smarte Hinweise";
 "Health" = "Zustand";
 "used" = "belegt";
 "Storage" = "Speicher";
@@ -189,7 +189,7 @@
 "Helper" = "Helper";
 "Installed" = "Installiert";
 "Missing" = "Fehlt";
-"Purify is a modern take on the classic iCleaner Pro idea, rebuilt for rootless and roothide." = "Purify ist eine moderne Neuauflage der klassischen iCleaner-Pro-Idee, neu gebaut für rootless und roothide.";
+"A lightweight system cleaner for rootless and roothide jailbreaks." = "Ein schlanker System-Cleaner für rootless- und roothide-Jailbreaks.";
 "freed since you installed Purify" = "freigegeben seit der Installation von Purify";
 "Clean automatically" = "Automatisch reinigen";
 "A background launch daemon cleans quietly while you use your device. Privacy items can't be scheduled." = "Ein Launch-Daemon reinigt still im Hintergrund. Datenschutz-Elemente können nicht geplant werden.";

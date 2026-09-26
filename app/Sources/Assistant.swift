@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// On-device heuristics that turn a scan into readable advice.
-/// Nothing leaves the device – the "intelligence" is a rule engine.
+/// Simple rules that run entirely on the device.
 struct Insight: Identifiable {
     enum Action: Equatable {
         case clean([String])

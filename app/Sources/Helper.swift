@@ -128,7 +128,7 @@ final class HelperClient {
     }
 }
 
-/// Spawns with the root persona, the same mechanism TrollStore apps use.
+/// Spawns with the root persona (requires com.apple.private.persona-mgmt).
 private enum Persona {
     typealias SetPersona = @convention(c) (UnsafeMutablePointer<posix_spawnattr_t?>, uid_t, UInt32) -> Int32
     typealias SetID = @convention(c) (UnsafeMutablePointer<posix_spawnattr_t?>, uid_t) -> Int32

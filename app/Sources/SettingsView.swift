@@ -72,7 +72,7 @@ struct SettingsView: View {
                 } header: {
                     Text("About")
                 } footer: {
-                    Text("Purify is a modern take on the classic iCleaner Pro idea, rebuilt for rootless and roothide.")
+                    Text("A lightweight system cleaner for rootless and roothide jailbreaks.")
                 }
             }
             .listStyle(.insetGrouped)

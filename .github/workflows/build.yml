@@ -87,8 +87,8 @@ jobs:
             for f in dist/*.deb; do
               n=$(basename "$f")
               case "$n" in
-                *roothide*) echo "| \`$n\` | roothide (Dopamine roothide / Bootstrap) |" ;;
-                *) echo "| \`$n\` | rootless (Dopamine, palera1n rootless, …) |" ;;
+                *roothide*) echo "| \`$n\` | roothide |" ;;
+                *) echo "| \`$n\` | rootless |" ;;
               esac
             done
             echo
