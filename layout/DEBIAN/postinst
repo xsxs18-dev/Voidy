@@ -1,0 +1,15 @@
+#!/bin/sh
+# rootless: files live under /var/jb. roothide: the shell already sees jbroot as "/".
+for helper in /var/jb/usr/libexec/purifyhelper /usr/libexec/purifyhelper; do
+    if [ -f "$helper" ]; then
+        chown root:wheel "$helper"
+        chmod 6755 "$helper"
+    fi
+done
+
+for app in /var/jb/Applications/Purify.app /Applications/Purify.app; do
+    if [ -d "$app" ] && command -v uicache >/dev/null 2>&1; then
+        uicache -p "$app" >/dev/null 2>&1 || true
+    fi
+done
+exit 0
