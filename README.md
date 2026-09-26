@@ -15,6 +15,7 @@ Native, minimal iOS design in light and dark mode.
 
 ## Contents
 
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -23,6 +24,18 @@ Native, minimal iOS design in light and dark mode.
 - [Safety](#safety)
 - [Uninstalling](#uninstalling)
 - [Changelog](CHANGELOG.md)
+
+## Screenshots
+
+<p align="center">
+  <img src=".github/screenshots/home.png" width="19%" alt="Home">
+  <img src=".github/screenshots/clean.png" width="19%" alt="Clean">
+  <img src=".github/screenshots/tweaks.png" width="19%" alt="Tweaks">
+  <img src=".github/screenshots/tools.png" width="19%" alt="Tools">
+  <img src=".github/screenshots/settings.png" width="19%" alt="Settings">
+</p>
+
+<p align="center"><sub>Home · Clean · Tweaks · Tools · Settings</sub></p>
 
 ## Features
 

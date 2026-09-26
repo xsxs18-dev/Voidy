@@ -62,6 +62,7 @@ iOS 15 and later · rootless and roothide
 - Smart Insights with health score and one-tap suggestions
 - Swipe to exclude apps from cleaning and to delete large files
 - Main actions are now pinned to the bottom of the screen
+- Fixed "Zero KB" labels, a wrapping button and tweak names with a leading space
 - Various polish and cleanup
 
 ## Changelog (previous version)

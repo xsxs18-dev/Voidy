@@ -13,6 +13,11 @@ Release builds are numbered `<version>.<build>` (e.g. `1.1.4`). Entries below li
 - Swipe left on an app in App Caches to exclude it from cleaning
 - Swipe left on a large file to delete it
 
+### Fixed
+- Sizes of empty categories show "0 KB" instead of "Zero KB"
+- "Smart Clean" button no longer wraps onto two lines
+- Tweak names with a leading space (e.g. Choicy, Crane) are shown correctly
+
 ### Improved
 - Cleaner package description
 - Primary actions are pinned to the bottom of the screen

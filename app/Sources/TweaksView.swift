@@ -162,7 +162,7 @@ struct TweakRow: View {
             HStack(spacing: 12) {
                 IconBadge(symbol: "puzzlepiece.fill", colors: [tweak.enabled ? color : Theme.gray])
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(tweak.name)
+                    Text(tweak.name.trimmingCharacters(in: .whitespaces))
                         .foregroundColor(tweak.enabled ? .primary : .secondary)
                         .lineLimit(1)
                     Text(tweak.package.map { "\($0) · \(targets)" } ?? targets)

@@ -114,6 +114,7 @@ struct HomeView: View {
                     Task { await store.scan() }
                 } label: {
                     Label("Scan", systemImage: "arrow.triangle.2.circlepath")
+                        .lineLimit(1)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -123,6 +124,8 @@ struct HomeView: View {
                     Task { result = await store.smartClean() }
                 } label: {
                     Label("Smart Clean", systemImage: "sparkles")
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
