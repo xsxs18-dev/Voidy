@@ -6,7 +6,7 @@ Copy each block into the matching field of the Havoc package page.
 
 ## Name
 
-Purify
+Voidly
 
 ## Short description (tagline)
 
@@ -14,7 +14,7 @@ A lightweight system cleaner for rootless & roothide.
 
 ## Description
 
-Purify frees up storage and keeps your jailbroken device tidy – with a clean, native interface that feels right at home on iOS.
+Voidly frees up storage and keeps your jailbroken device tidy – with a clean, native interface that feels right at home on iOS.
 
 **Cleaning**
 - App caches, Safari cache, temporary files, crash reports and logs
@@ -48,24 +48,20 @@ Purify frees up storage and keeps your jailbroken device tidy – with a clean, 
 - Light & dark mode, English & German
 
 **Safety**
-Purify only removes files from clearly defined locations. Photos, messages, contacts, keychain, mail and the package database are never touched. When you uninstall Purify, every tweak and daemon it disabled is re-enabled automatically.
+Voidly only removes files from clearly defined locations. Photos, messages, contacts, keychain, mail and the package database are never touched. When you uninstall Voidly, every tweak and daemon it disabled is re-enabled automatically.
 
 **Compatibility**
 iOS 15 and later · rootless and roothide
 
 ## Changelog (current version)
 
-**1.1**
-- Completely redesigned native interface with light & dark mode
-- New minimal app icon
-- Storage bar with used, reclaimable and free space
-- Smart Insights with health score and one-tap suggestions
-- Swipe to exclude apps from cleaning and to delete large files
-- Main actions are now pinned to the bottom of the screen
-- Fixed "Zero KB" labels, a wrapping button and tweak names with a leading space
-- Various polish and cleanup
+**1.2**
+- New name: Voidly
+- Replaces the previous package automatically, cleaning history is kept
 
 ## Changelog (previous version)
 
-**1.0**
-- Initial release
+**1.1**
+- Completely redesigned native interface with light & dark mode
+- New minimal app icon
+- Smart Insights with health score and one-tap suggestions

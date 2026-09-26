@@ -8,7 +8,7 @@
 /* Home */
 "Smart cleaner for your jailbreak" = "Smarter Cleaner für deinen Jailbreak";
 "Helper not found" = "Helper nicht gefunden";
-"Purify needs its root helper. Install the package through Sileo or Zebra instead of sideloading the .app." = "Purify braucht seinen Root-Helper. Installiere das Paket über Sileo oder Zebra, statt nur die .app zu sideloaden.";
+"Voidly needs its root helper. Install the package through Sileo or Zebra instead of sideloading the .app." = "Voidly braucht seinen Root-Helper. Installiere das Paket über Sileo oder Zebra, statt nur die .app zu sideloaden.";
 "Cleaning…" = "Reinige…";
 "Analyzing…" = "Analysiere…";
 "reclaimable" = "freigebbar";
@@ -57,7 +57,7 @@
 "Privacy traces found" = "Datenschutz-Spuren gefunden";
 "History, cookies and keyboard learning can be wiped – they are never cleaned automatically." = "Verlauf, Cookies und Tastatur-Lerndaten können gelöscht werden – sie werden nie automatisch gereinigt.";
 "Review" = "Ansehen";
-"Let Purify clean on its own" = "Lass Purify selbst reinigen";
+"Let Voidly clean on its own" = "Lass Voidly selbst reinigen";
 "Schedule a quiet background clean so caches never pile up again." = "Plane eine stille Hintergrund-Reinigung, damit sich Caches nie wieder ansammeln.";
 "Set up" = "Einrichten";
 "%@ excluded" = "%@ ausgeschlossen";
@@ -119,7 +119,7 @@
 "Restore previous state" = "Vorherigen Zustand wiederherstellen";
 "Disable every tweak?" = "Alle Tweaks deaktivieren?";
 "Disable all" = "Alle deaktivieren";
-"Handy to find a misbehaving tweak. Purify remembers what was enabled so you can restore it with one tap." = "Praktisch, um einen fehlerhaften Tweak zu finden. Purify merkt sich, was aktiv war, damit du es mit einem Tipp wiederherstellen kannst.";
+"Handy to find a misbehaving tweak. Voidly remembers what was enabled so you can restore it with one tap." = "Praktisch, um einen fehlerhaften Tweak zu finden. Voidly merkt sich, was aktiv war, damit du es mit einem Tipp wiederherstellen kannst.";
 "installed" = "installiert";
 "active" = "aktiv";
 "disabled" = "deaktiviert";
@@ -190,7 +190,7 @@
 "Installed" = "Installiert";
 "Missing" = "Fehlt";
 "A lightweight system cleaner for rootless and roothide jailbreaks." = "Ein schlanker System-Cleaner für rootless- und roothide-Jailbreaks.";
-"freed since you installed Purify" = "freigegeben seit der Installation von Purify";
+"freed since you installed Voidly" = "freigegeben seit der Installation von Voidly";
 "Clean automatically" = "Automatisch reinigen";
 "A background launch daemon cleans quietly while you use your device. Privacy items can't be scheduled." = "Ein Launch-Daemon reinigt still im Hintergrund. Datenschutz-Elemente können nicht geplant werden.";
 "Interval" = "Intervall";
@@ -213,7 +213,7 @@
 "%lld files · %lld categories" = "%lld Dateien · %lld Kategorien";
 
 /* Errors */
-"The Purify helper is missing. Reinstall Purify from your package manager." = "Der Purify-Helper fehlt. Installiere Purify erneut über deinen Paketmanager.";
+"The Voidly helper is missing. Reinstall Voidly from your package manager." = "Der Voidly-Helper fehlt. Installiere Voidly erneut über deinen Paketmanager.";
 "Could not start the helper (error %lld)." = "Helper konnte nicht gestartet werden (Fehler %lld).";
 "Unexpected helper response: %@" = "Unerwartete Antwort vom Helper: %@";
 

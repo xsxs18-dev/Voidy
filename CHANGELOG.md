@@ -2,6 +2,11 @@
 
 Release builds are numbered `<version>.<build>` (e.g. `1.1.4`). Entries below list the changes per version.
 
+## 1.2
+
+### Changed
+- The app is now called **Voidly** (package `com.xsxs18.voidly`). Installing it replaces the old package automatically; cleaning history is carried over.
+
 ## 1.1
 
 ### New

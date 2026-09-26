@@ -1,6 +1,6 @@
-Package: com.xsxs18.purify
-Name: Purify
-Version: 1.1
+Package: com.xsxs18.voidly
+Name: Voidly
+Version: 1.2
 Architecture: iphoneos-arm
 Description: Lightweight system cleaner for rootless and roothide jailbreaks.
  Removes caches, logs, temporary files and package leftovers, manages
@@ -10,4 +10,7 @@ Maintainer: xsxs18
 Author: xsxs18
 Section: Utilities
 Depends: firmware (>= 15.0)
+Conflicts: com.xsxs18.purify
+Replaces: com.xsxs18.purify
+Provides: com.xsxs18.purify
 Recommends: uikittools

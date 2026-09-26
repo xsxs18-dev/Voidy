@@ -142,7 +142,7 @@ final class AppStore: ObservableObject {
     // MARK: - History
 
     func loadHistory() {
-        let path = helper.jb("/var/mobile/Library/Purify/history.jsonl")
+        let path = helper.jb("/var/mobile/Library/Voidly/history.jsonl")
         guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return }
         let decoder = JSONDecoder()
         history = text.split(separator: "\n")

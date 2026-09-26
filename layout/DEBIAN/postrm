@@ -1,6 +1,6 @@
 #!/bin/sh
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
-    for app in /var/jb/Applications/Purify.app /Applications/Purify.app; do
+    for app in /var/jb/Applications/Voidly.app /Applications/Voidly.app; do
         if command -v uicache >/dev/null 2>&1; then
             uicache -u "$app" >/dev/null 2>&1 || true
         fi

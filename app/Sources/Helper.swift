@@ -10,7 +10,7 @@ enum HelperError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notInstalled:
-            return String(localized: "The Purify helper is missing. Reinstall Purify from your package manager.")
+            return String(localized: "The Voidly helper is missing. Reinstall Voidly from your package manager.")
         case .spawnFailed(let code):
             return String(localized: "Could not start the helper (error \(Int(code))).")
         case .badOutput(let text):
@@ -21,7 +21,7 @@ enum HelperError: LocalizedError {
     }
 }
 
-/// Talks to `purifyhelper`, the root backend installed alongside the app.
+/// Talks to `voidlyhelper`, the root backend installed alongside the app.
 final class HelperClient {
     static let shared = HelperClient()
 
@@ -34,14 +34,14 @@ final class HelperClient {
     }
 
     private init() {
-        // <jbroot>/Applications/Purify.app -> <jbroot>
+        // <jbroot>/Applications/Voidly.app -> <jbroot>
         let bundle = Bundle.main.bundlePath as NSString
         let root = (bundle.deletingLastPathComponent as NSString).deletingLastPathComponent
-        let candidates = [root + "/usr/libexec/purifyhelper", "/var/jb/usr/libexec/purifyhelper", "/usr/libexec/purifyhelper"]
+        let candidates = [root + "/usr/libexec/voidlyhelper", "/var/jb/usr/libexec/voidlyhelper", "/usr/libexec/voidlyhelper"]
         let found = candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
         helperPath = found
         if let found = found {
-            jbroot = String(found.dropLast("/usr/libexec/purifyhelper".count))
+            jbroot = String(found.dropLast("/usr/libexec/voidlyhelper".count))
         } else {
             jbroot = root
         }

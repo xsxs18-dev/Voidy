@@ -137,7 +137,7 @@ enum SmartAssistant {
         let lastClean = history.map(\.date).max() ?? 0
         if !scheduleEnabled, Date().timeIntervalSince1970 - lastClean > 14 * 86_400 {
             insights.append(Insight(icon: "calendar.badge.clock", tint: Theme.teal,
-                                    title: String(localized: "Let Purify clean on its own"),
+                                    title: String(localized: "Let Voidly clean on its own"),
                                     detail: String(localized: "Schedule a quiet background clean so caches never pile up again."),
                                     action: .openSchedule,
                                     actionTitle: String(localized: "Set up"),

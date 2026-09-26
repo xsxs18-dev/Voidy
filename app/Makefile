@@ -3,11 +3,11 @@ ARCHS = arm64
 
 include $(THEOS)/makefiles/common.mk
 
-APPLICATION_NAME = Purify
+APPLICATION_NAME = Voidly
 
-Purify_FILES = $(wildcard Sources/*.swift)
-Purify_SWIFTFLAGS = -parse-as-library
-Purify_FRAMEWORKS = UIKit SwiftUI
-Purify_CODESIGN_FLAGS = -Sentitlements.plist
+Voidly_FILES = $(wildcard Sources/*.swift)
+Voidly_SWIFTFLAGS = -parse-as-library
+Voidly_FRAMEWORKS = UIKit SwiftUI
+Voidly_CODESIGN_FLAGS = -Sentitlements.plist
 
 include $(THEOS_MAKE_PATH)/application.mk
