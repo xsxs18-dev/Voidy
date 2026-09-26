@@ -1,4 +1,4 @@
-<p align="center"><img src=".github/assets/icon.png" width="112" alt="Voidy"></p>
+<p align="center"><img src=".github/assets/banner.png" alt="Voidy"></p>
 
 <h1 align="center">Voidy</h1>
 
