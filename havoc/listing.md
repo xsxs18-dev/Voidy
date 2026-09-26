@@ -53,16 +53,7 @@ Voidy only removes files from clearly defined locations. Photos, messages, conta
 **Compatibility**
 iOS 15 and later · rootless and roothide
 
-## Changelog (current version)
+## Changelog
 
-**1.2**
-- New name: Voidy
-- Replaces the previous package automatically, cleaning history is kept
-- Darker look with a deep violet accent and a new dark icon
-
-## Changelog (previous version)
-
-**1.1**
-- Completely redesigned native interface with light & dark mode
-- New minimal app icon
-- Smart Insights with health score and one-tap suggestions
+**1.0**
+- Initial release

@@ -122,10 +122,10 @@ Packages end up in `packages/`.
 Every push runs `.github/workflows/build.yml`, which:
 
 1. builds the rootless and roothide variants on macOS,
-2. sets the version to `<version from control>.<build number>` (e.g. `1.1.7`),
-3. publishes both `.deb` files as GitHub release `v<version>`.
+2. uses the version from `control` (e.g. `1.0`),
+3. publishes both `.deb` files as GitHub release `v<version>` and removes older releases.
 
-Pull requests are built but not released.
+To ship a new version, raise `Version:` in `control`. Pull requests are built but not released.
 
 ## Project layout
 

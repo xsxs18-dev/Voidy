@@ -1021,19 +1021,6 @@ static int CmdRestoreAll(void) {
     return 0;
 }
 
-#pragma mark - Migration
-
-// Carries data over from the app's previous name.
-static void MigrateLegacyData(void) {
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSArray *pairs = @[ @[ @"/var/mobile/Library/Purify", @"/var/mobile/Library/Voidy" ],
-                        @[ @"/Library/Purify", @"/Library/Voidy" ] ];
-    for (NSArray *pair in pairs) {
-        NSString *legacy = JB(pair[0]), *current = JB(pair[1]);
-        if (Exists(legacy) && !Exists(current)) [fm moveItemAtPath:legacy toPath:current error:nil];
-    }
-}
-
 #pragma mark - main
 
 int main(int argc, char *argv[]) {
@@ -1043,7 +1030,6 @@ int main(int argc, char *argv[]) {
         setgid(0);
         setuid(0);
         if (getuid() != 0) return Fail(@"Helper is not running as root – reinstall Voidy");
-        MigrateLegacyData();
 
         NSMutableArray<NSString *> *args = [NSMutableArray array];
         for (int i = 1; i < argc; i++) [args addObject:@(argv[i])];
@@ -1052,7 +1038,7 @@ int main(int argc, char *argv[]) {
         [args removeObjectAtIndex:0];
 
         if ([cmd isEqualToString:@"info"]) {
-            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.2" });
+            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.0" });
             return 0;
         }
         if ([cmd isEqualToString:@"scan"]) return CmdScan(args);
