@@ -58,6 +58,7 @@ iOS 15 and later · rootless and roothide
 **1.2**
 - New name: Voidy
 - Replaces the previous package automatically, cleaning history is kept
+- Darker look with a deep violet accent and a new dark icon
 
 ## Changelog (previous version)
 

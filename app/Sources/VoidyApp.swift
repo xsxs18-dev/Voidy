@@ -12,6 +12,7 @@ struct VoidyApp: App {
             RootView()
                 .environmentObject(store)
                 .tint(Theme.accent)
+                .preferredColorScheme(.dark)
         }
     }
 }

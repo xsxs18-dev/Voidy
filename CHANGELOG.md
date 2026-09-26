@@ -6,6 +6,8 @@ Release builds are numbered `<version>.<build>` (e.g. `1.1.4`). Entries below li
 
 ### Changed
 - The app is now called **Voidy** (package `com.xsxs18.voidy`). Installing it replaces older packages automatically; cleaning history is carried over.
+- Darker look: the app always uses dark mode with a deep violet accent
+- New dark app icon
 
 ## 1.1
 
