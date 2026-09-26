@@ -8,6 +8,6 @@ Description: Lightweight system cleaner for rootless and roothide jailbreaks.
  can clean automatically on a schedule.
 Maintainer: xsxs18
 Author: xsxs18
-Section: Utilities
+Section: Applications
 Depends: firmware (>= 15.0)
 Recommends: uikittools
