@@ -3,143 +3,145 @@
 <h1 align="center">Purify</h1>
 
 <p align="center">
-Schlanker System-Cleaner für <b>rootless</b>- und <b>roothide</b>-Jailbreaks.<br>
-Natives, minimalistisches iOS-Design, hell und dunkel.
+A lightweight system cleaner for <b>rootless</b> and <b>roothide</b> jailbreaks.<br>
+Native, minimal iOS design in light and dark mode.
 </p>
 
 <p align="center">
-<a href="../../releases/latest"><b>Neueste Version herunterladen</b></a>
+<a href="../../releases/latest"><b>Download the latest release</b></a>
 </p>
 
 ---
 
-## Inhalt
+## Contents
 
-- [Funktionen](#funktionen)
-- [Voraussetzungen](#voraussetzungen)
+- [Features](#features)
+- [Requirements](#requirements)
 - [Installation](#installation)
-- [Selbst bauen](#selbst-bauen)
-- [Projektaufbau](#projektaufbau)
-- [Sicherheit](#sicherheit)
-- [Deinstallation](#deinstallation)
+- [Building](#building)
+- [Project layout](#project-layout)
+- [Safety](#safety)
+- [Uninstalling](#uninstalling)
+- [Changelog](CHANGELOG.md)
 
-## Funktionen
+## Features
 
-### Reinigen
+### Cleaning
 
-| Kategorie | Stufe | Inhalt |
+| Category | Level | What gets removed |
 |---|---|---|
-| App-Caches | Empfohlen | `Library/Caches` der installierten Apps (einzelne Apps ausschließbar) |
-| Safari-Cache | Empfohlen | Browser- und WebKit-Caches |
-| Temporäre Dateien | Empfohlen | tmp-Ordner von System, Jailbreak und Apps (nur ältere Dateien) |
-| Absturzberichte | Empfohlen | Crash- und Diagnoseberichte |
-| Log-Dateien | Empfohlen | System- und Jailbreak-Logs (Ordner bleiben erhalten) |
-| Paket-Cache | Empfohlen | heruntergeladene `.deb`-Archive und Paketmanager-Caches |
-| Tweak-Caches | Empfohlen | Caches von Tweaks und Jailbreak-Apps |
-| Repo-Listen | Erweitert | Paketlisten, werden beim nächsten Aktualisieren neu geladen |
-| Browserverlauf | Datenschutz | Verlauf und zuletzt geschlossene Tabs |
-| Cookies & Website-Daten | Datenschutz | Cookies und gespeicherte Website-Daten |
-| Tastatur-Lerndaten | Datenschutz | gelernte Wortvorschläge |
+| App caches | Recommended | `Library/Caches` of installed apps (individual apps can be excluded) |
+| Safari cache | Recommended | Browser and WebKit caches |
+| Temporary files | Recommended | tmp folders of the system, the jailbreak and apps (older files only) |
+| Crash reports | Recommended | Crash and diagnostic reports |
+| Log files | Recommended | System and jailbreak logs (folders are kept) |
+| Package cache | Recommended | Downloaded `.deb` archives and package manager caches |
+| Tweak caches | Recommended | Caches of tweaks and jailbreak apps |
+| Repository lists | Advanced | Package lists, re-downloaded on the next refresh |
+| Browsing history | Privacy | History and recently closed tabs |
+| Cookies & website data | Privacy | Cookies and stored website data |
+| Keyboard learning | Privacy | Learned word suggestions |
 
-Datenschutz-Kategorien brauchen immer eine eigene Bestätigung und werden nie automatisch gereinigt.
+Privacy categories always need an extra confirmation and are never cleaned automatically.
 
-### Smarte Hinweise
-Nach jedem Scan wertet Purify die Ergebnisse direkt auf dem Gerät aus. Es werden keine Daten gesendet.
-- Zustands-Score von 0 bis 100
-- erkennt, wenn ein Prozess wiederholt abstürzt, und verweist auf die Tweak-Liste
-- weist auf Apps mit sehr großem Cache hin (z. B. Offline-Musik) und bietet an, sie auszuschließen
-- warnt bei fast vollem Speicher
+### Smart Insights
+After every scan Purify reviews the results on the device. No data is sent anywhere.
+- Health score from 0 to 100
+- Detects processes that crash repeatedly and points you to your tweaks
+- Flags apps with very large caches (e.g. offline music) and offers to exclude them
+- Warns when storage is almost full
 
 ### Tweaks
-- alle installierten Tweaks mit Paketname und Ziel-Apps
-- Suche und Filter (alle / aktiv / deaktiviert)
-- einzeln an- und ausschalten, ohne Dateien zu löschen
-- **Alle deaktivieren** zur Fehlersuche und **Wiederherstellen** mit einem Tipp
+- Every installed tweak with its package and target apps
+- Search and filter (all / enabled / disabled)
+- Toggle tweaks on and off without deleting anything
+- **Disable all** for troubleshooting and **Restore** with a single tap
 
-### Werkzeuge
-- **Große Dateien** finden und per Wischgeste löschen
-- **Verwaiste Pakete** entfernen (`apt-get autoremove`)
-- **Unbenutzte Sprachdateien** in Jailbreak-Apps und Tweaks entfernen
-- **Launch-Daemons** des Jailbreaks starten und stoppen
-- **Neustart-Optionen**: Respring, Icon-Cache neu aufbauen, Userspace-Neustart, ldrestart, Neustart
+### Tools
+- **Large files**: find them and delete with a swipe
+- **Orphaned packages**: remove unused dependencies (`apt-get autoremove`)
+- **Unused languages**: remove localizations from jailbreak apps and tweaks
+- **Launch daemons**: start and stop jailbreak background services
+- **Power**: respring, rebuild icon cache, userspace reboot, ldrestart, reboot
 
-### Außerdem
-- **Automatische Reinigung** im Hintergrund (alle 6 Stunden bis wöchentlich)
-- **Verlauf** aller Reinigungen mit Diagramm
-- **Schnellaktionen** auf dem Homescreen-Icon: Smart Clean und Respring
-- Deutsch und Englisch
+### More
+- **Automatic cleaning** in the background (every 6 hours up to weekly)
+- **History** of all cleans with a chart
+- **Home screen quick actions**: Smart Clean and Respring
+- English and German
 
-## Voraussetzungen
+## Requirements
 
-- iOS 15 oder neuer
-- ein **rootless**- oder **roothide**-Jailbreak mit Paketmanager (Sileo, Zebra o. Ä.)
+- iOS 15 or later
+- A **rootless** or **roothide** jailbreak with a package manager (Sileo, Zebra or similar)
 
-Nur die `.app` zu sideloaden reicht nicht: Purify braucht seinen Root-Helper, der mit dem Paket installiert wird.
+Sideloading only the `.app` is not enough: Purify needs its root helper, which is installed with the package.
 
 ## Installation
 
-1. Auf der [Release-Seite](../../releases/latest) die passende Datei laden:
+1. Download the matching file from the [release page](../../releases/latest):
 
-   | Datei | Jailbreak |
+   | File | Jailbreak |
    |---|---|
    | `purify_<version>_rootless_iphoneos-arm64.deb` | rootless |
    | `purify_<version>_roothide_iphoneos-arm64e.deb` | roothide |
 
-2. Die `.deb` mit Sileo, Zebra oder Filza öffnen und installieren.
-3. Purify vom Homescreen starten.
+2. Open the `.deb` with Sileo, Zebra or Filza and install it.
+3. Launch Purify from the home screen.
 
-## Selbst bauen
+## Building
 
-Benötigt wird [Theos](https://theos.dev) mit Swift-Unterstützung (am einfachsten unter macOS mit Xcode). Für roothide den
-[roothide-Fork von Theos](https://github.com/roothide/theos) verwenden.
+You need [Theos](https://theos.dev) with Swift support (easiest on macOS with Xcode). For roothide, use the
+[roothide fork of Theos](https://github.com/roothide/theos).
 
 ```sh
 # rootless
 make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
 
 # roothide
-make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide THEOS=/pfad/zu/roothide-theos
+make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide THEOS=/path/to/roothide-theos
 ```
 
-Die Pakete landen in `packages/`.
+Packages end up in `packages/`.
 
-### Automatische Builds & Releases
+### Automatic builds & releases
 
-Jeder Push startet den Workflow `.github/workflows/build.yml`:
+Every push runs `.github/workflows/build.yml`, which:
 
-1. baut die rootless- und die roothide-Variante auf macOS,
-2. setzt die Version automatisch auf `<Version aus control>.<Build-Nummer>` (z. B. `1.1.7`),
-3. veröffentlicht beide `.deb`s als GitHub-Release `v<Version>`.
+1. builds the rootless and roothide variants on macOS,
+2. sets the version to `<version from control>.<build number>` (e.g. `1.1.7`),
+3. publishes both `.deb` files as GitHub release `v<version>`.
 
-Pull Requests werden nur gebaut, nicht veröffentlicht.
+Pull requests are built but not released.
 
-## Projektaufbau
+## Project layout
 
 ```
-app/                 SwiftUI-App
-  Sources/           Oberfläche, Datenmodell, Hinweis-Logik
-  Resources/         Info.plist, Icons, Übersetzungen
-purifyhelper/        Root-Helper (Objective-C), antwortet mit JSON
-layout/DEBIAN/       Installations- und Deinstallations-Skripte
-control              Paketinformationen
+app/                 SwiftUI app
+  Sources/           UI, data model, insight rules
+  Resources/         Info.plist, icons, translations
+purifyhelper/        Root helper (Objective-C), replies with JSON
+layout/DEBIAN/       Install and uninstall scripts
+control              Package metadata
+CHANGELOG.md         Release history
 ```
 
-**Wie App und Helper zusammenarbeiten:** Die App hat selbst keine Root-Rechte. Für jede Aktion startet sie
-`purifyhelper` als root und liest dessen JSON-Antwort. Der Helper ermittelt den Pfad des Jailbreaks zur Laufzeit
-über seinen eigenen Speicherort, deshalb läuft derselbe Code unter rootless (`/var/jb`) und roothide.
+**How the app and the helper work together:** the app itself has no root privileges. For every action it launches
+`purifyhelper` as root and reads its JSON reply. The helper determines the jailbreak root at runtime from its own
+location, so the same code runs on rootless (`/var/jb`) and roothide.
 
-## Sicherheit
+## Safety
 
-- Der Helper nimmt nur Aufrufe von root oder von der installierten Purify-App an.
-- Gelöscht wird nur in fest definierten Bereichen. Fotos, Nachrichten, Kontakte, Schlüsselbund, Mail,
-  Einstellungen und die Paketdatenbank sind geschützt.
-- Kern-Dienste des Jailbreaks lassen sich in der Daemon-Liste nicht abschalten.
-- Tweaks werden nur deaktiviert (Filter-Datei umbenannt), nie gelöscht.
+- The helper only accepts calls from root or from the installed Purify app.
+- Files are only removed from clearly defined locations. Photos, messages, contacts, keychain, mail,
+  preferences and the package database are protected.
+- Core jailbreak services cannot be turned off in the daemon list.
+- Tweaks are only disabled (their filter file is renamed), never deleted.
 
-Trotzdem gilt wie bei jedem Jailbreak-Werkzeug: Nutzung auf eigene Verantwortung.
+As with any jailbreak tool: use at your own risk.
 
-## Deinstallation
+## Uninstalling
 
-Beim Entfernen des Pakets werden automatisch
-- alle von Purify deaktivierten Tweaks und Daemons wieder aktiviert und
-- die automatische Reinigung entfernt.
+When the package is removed, Purify automatically
+- re-enables every tweak and daemon it disabled, and
+- removes the automatic cleaning schedule.
