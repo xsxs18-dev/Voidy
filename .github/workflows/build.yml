@@ -82,7 +82,7 @@ jobs:
           {
             echo "## Purify ${{ needs.build.outputs.version }}"
             echo
-            echo "| Datei | Jailbreak |"
+            echo "| File | Jailbreak |"
             echo "|---|---|"
             for f in dist/*.deb; do
               n=$(basename "$f")
@@ -92,10 +92,10 @@ jobs:
               esac
             done
             echo
-            echo "Installation: passende \`.deb\` mit Sileo, Zebra oder Filza installieren."
+            echo "**Installation:** open the matching \`.deb\` with Sileo, Zebra or Filza."
             echo
             if [ -n "$COMMIT_MESSAGE" ]; then
-              echo "### Änderungen"
+              echo "### Changes"
               echo
               echo "$COMMIT_MESSAGE" | grep -v -e '^Co-Authored-By:' -e '^Claude-Session:'
             fi
@@ -110,3 +110,25 @@ jobs:
           body_path: notes.md
           files: dist/*.deb
           make_latest: true
+
+      - name: Translate notes of older releases to English
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for tag in $(gh release list --limit 100 --json tagName --jq '.[].tagName'); do
+            body=$(gh release view "$tag" --json body --jq .body)
+            case "$body" in
+              *"Installation: passende"*|*"| Datei |"*|*"### Änderungen"*) ;;
+              *) continue ;;
+            esac
+            printf '%s\n' "$body" \
+              | sed -e 's/| Datei | Jailbreak |/| File | Jailbreak |/' \
+                    -e 's/^Installation: passende `.deb` mit Sileo, Zebra oder Filza installieren\./**Installation:** open the matching `.deb` with Sileo, Zebra or Filza./' \
+                    -e 's/^### Änderungen/### Changes/' \
+                    -e 's/| roothide (Dopamine roothide \/ Bootstrap) |/| roothide |/' \
+                    -e 's/| rootless (Dopamine, palera1n rootless, …) |/| rootless |/' \
+              > old.md
+            gh release edit "$tag" --notes-file old.md
+            echo "Updated $tag"
+          done
