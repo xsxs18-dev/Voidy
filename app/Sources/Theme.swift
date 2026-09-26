@@ -3,7 +3,7 @@ import UIKit
 
 /// Minimal, native look: system colours, grouped lists, Settings-style icons.
 enum Theme {
-    static let accent = Color(red: 0.36, green: 0.40, blue: 0.96)
+    static let accent = Color(red: 0.58, green: 0.40, blue: 1.00)
 
     static let violet = Color(.systemPurple)
     static let indigo = Color(.systemIndigo)

@@ -19,7 +19,7 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(Format.bytes(store.allTimeFreed))
                                 .font(.title2.weight(.bold).monospacedDigit())
-                            Text("freed since you installed Purify")
+                            Text("freed since you installed Voidy")
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
                         }

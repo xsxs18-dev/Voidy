@@ -14,7 +14,7 @@ struct HomeView: View {
                         Label {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("Helper not found").font(.headline)
-                                Text("Purify needs its root helper. Install the package through Sileo or Zebra instead of sideloading the .app.")
+                                Text("Voidy needs its root helper. Install the package through Sileo or Zebra instead of sideloading the .app.")
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                             }
@@ -56,7 +56,7 @@ struct HomeView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Purify")
+            .navigationTitle("Voidy")
             .refreshable { await store.scan() }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

@@ -10,15 +10,15 @@
 		<string>de</string>
 	</array>
 	<key>CFBundleDisplayName</key>
-	<string>Purify</string>
+	<string>Voidy</string>
 	<key>CFBundleExecutable</key>
-	<string>Purify</string>
+	<string>Voidy</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.xsxs18.purify</string>
+	<string>com.xsxs18.voidy</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Purify</string>
+	<string>Voidy</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -72,6 +72,8 @@
 		<key>UIColorName</key>
 		<string></string>
 	</dict>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -92,7 +94,7 @@
 	<array>
 		<dict>
 			<key>UIApplicationShortcutItemType</key>
-			<string>com.xsxs18.purify.smartclean</string>
+			<string>com.xsxs18.voidy.smartclean</string>
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Smart Clean</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
@@ -100,7 +102,7 @@
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemType</key>
-			<string>com.xsxs18.purify.respring</string>
+			<string>com.xsxs18.voidy.respring</string>
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Respring</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>

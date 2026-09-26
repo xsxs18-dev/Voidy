@@ -1,4 +1,4 @@
-// purifyhelper – privileged backend for Purify.
+// voidyhelper – privileged backend for Voidy.
 //
 // Runs as root (spawned by the app with the root persona, or via its setuid
 // bit) and speaks JSON on stdout. Works on rootless and roothide: the
@@ -19,9 +19,9 @@
 extern char **environ;
 extern int proc_pidpath(int pid, void *buffer, uint32_t buffersize);
 
-#define HELPER_SUFFIX   @"/usr/libexec/purifyhelper"
-#define APP_BUNDLE_NAME @"Purify.app"
-#define SCHEDULE_LABEL  @"com.xsxs18.purify.autoclean"
+#define HELPER_SUFFIX   @"/usr/libexec/voidyhelper"
+#define APP_BUNDLE_NAME @"Voidy.app"
+#define SCHEDULE_LABEL  @"com.xsxs18.voidy.autoclean"
 #define MOBILE_UID      501
 
 static NSString *gJBRoot = @"";
@@ -90,7 +90,7 @@ static NSString *Scheme(void) {
 
 #pragma mark - Caller check
 
-// Only root (launchd, dpkg, persona-spawned app) or the installed Purify app may use us.
+// Only root (launchd, dpkg, persona-spawned app) or the installed Voidy app may use us.
 static BOOL CallerAllowed(void) {
     if (getuid() == 0) return YES;
     char path[4096] = {0};
@@ -348,7 +348,7 @@ static NSArray<PTarget *> *TargetsForCategory(NSString *cat, NSSet<NSString *> *
         [t addObject:T(JB(@"/var/lib/apt/sileolists"), @"Sileo lists", PTargetContents)];
     } else if ([cat isEqualToString:@"shared_caches"]) {
         NSSet *owned = [NSSet setWithObjects:@"org.coolstar.SileoStore", @"xyz.willy.Zebra", @"com.saurik.Cydia",
-                        @"com.tigisoftware.Filza", @"com.xsxs18.purify", nil];
+                        @"com.tigisoftware.Filza", @"com.xsxs18.voidy", nil];
         NSSet *appleSafe = [NSSet setWithObjects:@"GeoServices", @"com.apple.parsecd", nil];
         BOOL (^filter)(NSString *) = ^BOOL(NSString *n) {
             if ([owned containsObject:n] || [excluded containsObject:n]) return NO;
@@ -512,7 +512,7 @@ static int CmdScan(NSMutableArray<NSString *> *args) {
 }
 
 static void AppendHistory(uint64_t freed, uint64_t files, NSArray *cats, BOOL automatic) {
-    NSString *dir = JB(@"/var/mobile/Library/Purify");
+    NSString *dir = JB(@"/var/mobile/Library/Voidy");
     EnsureMobileDir(dir);
     NSString *file = [dir stringByAppendingPathComponent:@"history.jsonl"];
     NSDictionary *entry = @{ @"date": @((long long)time(NULL)), @"bytes": @(freed), @"files": @(files),
@@ -764,10 +764,10 @@ static int CmdTweaksSet(NSMutableArray<NSString *> *args) {
 #pragma mark - Launch daemons
 
 static NSString *DaemonDir(void) { return JB(@"/Library/LaunchDaemons"); }
-static NSString *DisabledDaemonDir(void) { return JB(@"/Library/Purify/DisabledDaemons"); }
+static NSString *DisabledDaemonDir(void) { return JB(@"/Library/Voidy/DisabledDaemons"); }
 
 static BOOL IsLockedDaemon(NSString *label) {
-    for (NSString *prefix in @[ @"com.opa334.", @"com.roothide.", @"com.apple.", @"com.ellekit", @"com.xsxs18.purify",
+    for (NSString *prefix in @[ @"com.opa334.", @"com.roothide.", @"com.apple.", @"com.ellekit", @"com.xsxs18.voidy",
                                 @"com.hrtowii.", @"com.nathan.", @"com.serena." ]) {
         if ([label hasPrefix:prefix]) return YES;
     }
@@ -1000,7 +1000,7 @@ static int CmdSchedule(NSMutableArray<NSString *> *args) {
     return OK(nil);
 }
 
-// Undo everything Purify parked, used when the package is removed.
+// Undo everything Voidy parked, used when the package is removed.
 static int CmdRestoreAll(void) {
     NSString *dir = TweakDir();
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -1021,6 +1021,19 @@ static int CmdRestoreAll(void) {
     return 0;
 }
 
+#pragma mark - Migration
+
+// Carries data over from the app's previous name.
+static void MigrateLegacyData(void) {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSArray *pairs = @[ @[ @"/var/mobile/Library/Purify", @"/var/mobile/Library/Voidy" ],
+                        @[ @"/Library/Purify", @"/Library/Voidy" ] ];
+    for (NSArray *pair in pairs) {
+        NSString *legacy = JB(pair[0]), *current = JB(pair[1]);
+        if (Exists(legacy) && !Exists(current)) [fm moveItemAtPath:legacy toPath:current error:nil];
+    }
+}
+
 #pragma mark - main
 
 int main(int argc, char *argv[]) {
@@ -1029,7 +1042,8 @@ int main(int argc, char *argv[]) {
         if (!CallerAllowed()) return Fail(@"Permission denied");
         setgid(0);
         setuid(0);
-        if (getuid() != 0) return Fail(@"Helper is not running as root – reinstall Purify");
+        if (getuid() != 0) return Fail(@"Helper is not running as root – reinstall Voidy");
+        MigrateLegacyData();
 
         NSMutableArray<NSString *> *args = [NSMutableArray array];
         for (int i = 1; i < argc; i++) [args addObject:@(argv[i])];
@@ -1038,7 +1052,7 @@ int main(int argc, char *argv[]) {
         [args removeObjectAtIndex:0];
 
         if ([cmd isEqualToString:@"info"]) {
-            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.0.0" });
+            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.2" });
             return 0;
         }
         if ([cmd isEqualToString:@"scan"]) return CmdScan(args);
