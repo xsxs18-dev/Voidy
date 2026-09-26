@@ -24,6 +24,7 @@ Native, minimal iOS design with a dark look.
 - [Safety](#safety)
 - [Uninstalling](#uninstalling)
 - [Changelog](CHANGELOG.md)
+- [License](#license)
 
 ## Screenshots
 
@@ -158,3 +159,7 @@ As with any jailbreak tool: use at your own risk.
 When the package is removed, Voidy automatically
 - re-enables every tweak and daemon it disabled, and
 - removes the automatic cleaning schedule.
+
+## License
+
+Voidy is released under the [MIT License](LICENSE).
