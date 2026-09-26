@@ -63,7 +63,7 @@ struct BarSegment: Identifiable {
     let color: Color
 }
 
-/// Horizontal segmented bar, like Settings › General › iPhone Storage.
+/// Horizontal segmented bar showing how storage is split.
 struct StorageBar: View {
     let segments: [BarSegment]
     var height: CGFloat = 10

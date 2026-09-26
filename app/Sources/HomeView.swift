@@ -137,7 +137,7 @@ struct HomeView: View {
     private var assistant: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
-                Label("Purify Intelligence", systemImage: "sparkles")
+                Label("Smart Insights", systemImage: "lightbulb")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(Theme.accent)
                 Text(store.analysis.summary)
