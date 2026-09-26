@@ -1,0 +1,44 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.scheme }}
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scheme: rootless
+            theos: theos/theos
+          - scheme: roothide
+            theos: roothide/theos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          brew install ldid make dpkg xz
+          echo "$(brew --prefix make)/libexec/gnubin" >> "$GITHUB_PATH"
+
+      - name: Install Theos (${{ matrix.theos }})
+        run: |
+          git clone --quiet --depth 1 --recursive https://github.com/${{ matrix.theos }}.git "$HOME/theos"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+
+      - name: Build package
+        run: make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }}
+
+      - name: Inspect package
+        run: |
+          ls -la packages
+          for deb in packages/*.deb; do dpkg-deb --info "$deb"; dpkg-deb --contents "$deb"; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: purify-${{ matrix.scheme }}
+          path: packages/*.deb

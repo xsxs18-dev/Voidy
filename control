@@ -1,0 +1,13 @@
+Package: com.xsxs18.purify
+Name: Purify
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: A modern, smart system cleaner for rootless & roothide jailbreaks.
+ Cleans caches, logs, temp files and package leftovers, manages tweaks and
+ launch daemons, finds large files and orphaned packages, and schedules
+ automatic cleaning – with a clean, AI-inspired interface.
+Maintainer: xsxs18
+Author: xsxs18
+Section: Utilities
+Depends: firmware (>= 15.0)
+Recommends: uikittools
