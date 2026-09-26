@@ -3,7 +3,7 @@ import UIKit
 import Combine
 
 @main
-struct VoidlyApp: App {
+struct VoidyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store = AppStore()
 

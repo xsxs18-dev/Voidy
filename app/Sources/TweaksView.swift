@@ -96,7 +96,7 @@ struct TweaksView: View {
         .confirmationDialog("Disable every tweak?", isPresented: $confirmDisableAll, titleVisibility: .visible) {
             Button("Disable all", role: .destructive) { Task { await disableAll() } }
         } message: {
-            Text("Handy to find a misbehaving tweak. Voidly remembers what was enabled so you can restore it with one tap.")
+            Text("Handy to find a misbehaving tweak. Voidy remembers what was enabled so you can restore it with one tap.")
         }
     }
 

@@ -1,7 +1,7 @@
 #!/bin/sh
-# On removal give back everything Voidly parked (disabled tweaks/daemons, schedule).
+# On removal give back everything Voidy parked (disabled tweaks/daemons, schedule).
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
-    for helper in /var/jb/usr/libexec/voidlyhelper /usr/libexec/voidlyhelper; do
+    for helper in /var/jb/usr/libexec/voidyhelper /usr/libexec/voidyhelper; do
         if [ -x "$helper" ]; then
             "$helper" restore-all >/dev/null 2>&1 || true
         fi
