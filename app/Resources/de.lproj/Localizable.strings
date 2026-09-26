@@ -216,3 +216,16 @@
 "The Purify helper is missing. Reinstall Purify from your package manager." = "Der Purify-Helper fehlt. Installiere Purify erneut über deinen Paketmanager.";
 "Could not start the helper (error %lld)." = "Helper konnte nicht gestartet werden (Fehler %lld).";
 "Unexpected helper response: %@" = "Unerwartete Antwort vom Helper: %@";
+
+/* v1.1 native UI */
+"Assistant" = "Assistent";
+"%@ free" = "%@ frei";
+"Privacy items are never cleaned automatically." = "Datenschutz-Elemente werden nie automatisch gereinigt.";
+"Swipe left on an app to exclude it from cleaning." = "Wische auf einer App nach links, um sie von der Reinigung auszuschließen.";
+"%lld of %lld active" = "%lld von %lld aktiv";
+"%lld files · %@" = "%lld Dateien · %@";
+"Photos, messages and other personal databases are never listed. Swipe left to delete." = "Fotos, Nachrichten und andere persönliche Datenbanken werden nie angezeigt. Nach links wischen zum Löschen.";
+"Every 6 hours" = "Alle 6 Stunden";
+"Every 12 hours" = "Alle 12 Stunden";
+"No apps excluded." = "Keine Apps ausgeschlossen.";
+"Copy" = "Kopieren";
