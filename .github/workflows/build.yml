@@ -97,7 +97,7 @@ jobs:
             if [ -n "$COMMIT_MESSAGE" ]; then
               echo "### Changes"
               echo
-              echo "$COMMIT_MESSAGE" | grep -v -e '^Co-Authored-By:' -e '^Claude-Session:'
+              echo "$COMMIT_MESSAGE"
             fi
           } > notes.md
           cat notes.md
