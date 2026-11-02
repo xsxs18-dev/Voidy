@@ -17,4 +17,4 @@ Initial release.
 - Home screen quick actions: Smart Clean and Respring
 - Native dark interface with a deep violet accent
 - rootless and roothide support
-- English and German
+- English, German and Simplified Chinese
