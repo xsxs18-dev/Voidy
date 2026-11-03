@@ -1,30 +1,10 @@
 <p align="center"><img src=".github/assets/banner.png" alt="Voidy"></p>
 
-<h1 align="center">Voidy</h1>
+# Voidy
 
-<p align="center">
-A lightweight system cleaner for <b>rootless</b> and <b>roothide</b> jailbreaks.<br>
-Native, minimal iOS design with a dark look.
-</p>
+System cleaner for rootless and roothide jailbreaks. It removes caches, logs, temp files and package leftovers, lets you turn tweaks and launch daemons on and off, finds large files and orphaned packages, and can clean on a schedule.
 
-<p align="center">
-<a href="../../releases/latest"><b>Download the latest release</b></a>
-</p>
-
----
-
-## Contents
-
-- [Screenshots](#screenshots)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Building](#building)
-- [Project layout](#project-layout)
-- [Safety](#safety)
-- [Uninstalling](#uninstalling)
-- [Changelog](CHANGELOG.md)
-- [License](#license)
+Download it from [Releases](../../releases/latest).
 
 ## Screenshots
 
@@ -58,8 +38,8 @@ Native, minimal iOS design with a dark look.
 
 Privacy categories always need an extra confirmation and are never cleaned automatically.
 
-### Smart Insights
-After every scan Voidy reviews the results on the device. No data is sent anywhere.
+### Insights
+After every scan Voidy looks at the results (on the device, nothing is sent anywhere):
 - Health score from 0 to 100
 - Detects processes that crash repeatedly and points you to your tweaks
 - Flags apps with very large caches (e.g. offline music) and offers to exclude them
@@ -69,27 +49,27 @@ After every scan Voidy reviews the results on the device. No data is sent anywhe
 - Every installed tweak with its package and target apps
 - Search and filter (all / enabled / disabled)
 - Toggle tweaks on and off without deleting anything
-- **Disable all** for troubleshooting and **Restore** with a single tap
+- Disable all for troubleshooting, then Restore
 
 ### Tools
-- **Large files**: find them and delete with a swipe
-- **Orphaned packages**: remove unused dependencies (`apt-get autoremove`)
-- **Unused languages**: remove localizations from jailbreak apps and tweaks
-- **Launch daemons**: start and stop jailbreak background services
-- **Power**: respring, rebuild icon cache, userspace reboot, ldrestart, reboot
+- Large files: find them, swipe to delete
+- Orphaned packages: remove unused dependencies (`apt-get autoremove`)
+- Unused languages: remove localizations from jailbreak apps and tweaks
+- Launch daemons: start and stop jailbreak background services
+- Power: respring, rebuild icon cache, userspace reboot, ldrestart, reboot
 
 ### More
-- **Automatic cleaning** in the background (every 6 hours up to weekly)
-- **History** of all cleans with a chart
-- **Home screen quick actions**: Smart Clean and Respring
+- Automatic cleaning in the background, every 6 hours up to weekly
+- History of all cleans with a chart
+- Home screen quick actions: Smart Clean and Respring
 - English, German and Simplified Chinese
 
 ## Requirements
 
 - iOS 15 or later
-- A **rootless** or **roothide** jailbreak with a package manager (Sileo, Zebra or similar)
+- A rootless or roothide jailbreak with a package manager (Sileo, Zebra, ...)
 
-Sideloading only the `.app` is not enough: Voidy needs its root helper, which is installed with the package.
+Sideloading just the `.app` doesn't work, Voidy needs its root helper from the package.
 
 ## Installation
 
@@ -118,15 +98,9 @@ make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide THEOS=/path/to/roothid
 
 Packages end up in `packages/`.
 
-### Automatic builds & releases
+### Releases
 
-Every push runs `.github/workflows/build.yml`, which:
-
-1. builds the rootless and roothide variants on macOS,
-2. uses the version from `control` (e.g. `1.0`),
-3. publishes both `.deb` files as GitHub release `v<version>` and removes older releases.
-
-To ship a new version, raise `Version:` in `control`. Pull requests are built but not released.
+Every push builds both variants on GitHub Actions and publishes them as release `v<version>` (version from `control`), older releases are removed. Pull requests are only built.
 
 ## Project layout
 
@@ -140,9 +114,8 @@ control              Package metadata
 CHANGELOG.md         Release history
 ```
 
-**How the app and the helper work together:** the app itself has no root privileges. For every action it launches
-`voidyhelper` as root and reads its JSON reply. The helper determines the jailbreak root at runtime from its own
-location, so the same code runs on rootless (`/var/jb`) and roothide.
+The app has no root privileges itself. For every action it runs `voidyhelper` as root and reads its JSON reply.
+The helper finds the jailbreak root from its own location, so the same code works on rootless (`/var/jb`) and roothide.
 
 ## Safety
 
@@ -152,14 +125,10 @@ location, so the same code runs on rootless (`/var/jb`) and roothide.
 - Core jailbreak services cannot be turned off in the daemon list.
 - Tweaks are only disabled (their filter file is renamed), never deleted.
 
-As with any jailbreak tool: use at your own risk.
-
 ## Uninstalling
 
-When the package is removed, Voidy automatically
-- re-enables every tweak and daemon it disabled, and
-- removes the automatic cleaning schedule.
+Removing the package turns every tweak and daemon Voidy disabled back on and removes the cleaning schedule.
 
 ## License
 
-Voidy is released under the [MIT License](LICENSE).
+MIT, see [LICENSE](LICENSE).

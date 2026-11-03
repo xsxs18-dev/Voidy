@@ -14,20 +14,20 @@ A lightweight system cleaner for rootless & roothide.
 
 ## Description
 
-Voidy frees up storage and keeps your jailbroken device tidy – with a clean, native interface that feels right at home on iOS.
+Voidy frees up storage and cleans up after tweaks and package managers.
 
 **Cleaning**
 - App caches, Safari cache, temporary files, crash reports and logs
 - Downloaded .deb files, package manager caches and tweak caches
 - Repository lists (optional)
-- Privacy: browsing history, cookies & website data, keyboard learning – always with confirmation, never automatic
+- Privacy: browsing history, cookies & website data, keyboard learning (always asks first, never automatic)
 - Exclude individual apps, e.g. ones that keep offline music or maps in their cache
 
 **Smart Insights**
 - Health score after every scan
 - Spots processes that keep crashing and points you to your tweaks
 - Flags apps with huge caches and warns when storage runs low
-- Everything is evaluated on your device – nothing is sent anywhere
+- Everything is evaluated on your device, nothing is sent anywhere
 
 **Tweaks**
 - See every tweak with its package and target apps
@@ -54,6 +54,9 @@ Voidy only removes files from clearly defined locations. Photos, messages, conta
 iOS 15 and later · rootless and roothide
 
 ## Changelog
+
+**1.0.2**
+- Free storage now matches the Settings app. Space iOS can clear by itself (caches, offloadable content) counts as free, so Voidy no longer says storage is almost full when it isn't
 
 **1.0.1**
 - Added Simplified Chinese (zh-Hans) localization – thanks to heiyanquan123!
