@@ -55,5 +55,9 @@ iOS 15 and later · rootless and roothide
 
 ## Changelog
 
+**1.0.1**
+- Added Simplified Chinese (zh-Hans) localization – thanks to heiyanquan123!
+- Voidy now supports English, German and Simplified Chinese
+
 **1.0**
 - Initial release

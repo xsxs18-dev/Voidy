@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Added Simplified Chinese (zh-Hans) localization – thanks to heiyanquan123!
+- Voidy now supports English, German and Simplified Chinese
+
 ## 1.0
 
 Initial release.
@@ -17,4 +22,4 @@ Initial release.
 - Home screen quick actions: Smart Clean and Respring
 - Native dark interface with a deep violet accent
 - rootless and roothide support
-- English, German and Simplified Chinese
+- English and German
