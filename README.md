@@ -82,7 +82,7 @@ After every scan Voidy reviews the results on the device. No data is sent anywhe
 - **Automatic cleaning** in the background (every 6 hours up to weekly)
 - **History** of all cleans with a chart
 - **Home screen quick actions**: Smart Clean and Respring
-- English and German
+- English, German and Simplified Chinese
 
 ## Requirements
 
