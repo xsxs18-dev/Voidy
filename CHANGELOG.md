@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Free storage now matches the Settings app: purgeable space (caches and content iOS can remove on its own) counts as free. Before, Voidy could show only a few GB free and warn that storage is almost full (#2)
+
 ## 1.0.1
 
 - Added Simplified Chinese (zh-Hans) localization – thanks to heiyanquan123!

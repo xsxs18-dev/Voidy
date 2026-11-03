@@ -171,9 +171,16 @@ struct StorageInfo {
 
     static func current() -> StorageInfo {
         let attrs = try? FileManager.default.attributesOfFileSystem(forPath: "/private/var")
-        let total = (attrs?[.systemSize] as? NSNumber)?.int64Value ?? 0
-        let free = (attrs?[.systemFreeSize] as? NSNumber)?.int64Value ?? 0
-        return StorageInfo(total: total, free: free)
+        var total = (attrs?[.systemSize] as? NSNumber)?.int64Value ?? 0
+        var free = (attrs?[.systemFreeSize] as? NSNumber)?.int64Value ?? 0
+        // systemFreeSize only counts unused blocks. iOS also counts purgeable data (caches, offloadable
+        // content) as free, which can be tens of GB – use the same number the Settings app shows.
+        let keys: Set<URLResourceKey> = [.volumeTotalCapacityKey, .volumeAvailableCapacityForImportantUsageKey]
+        if let values = try? URL(fileURLWithPath: "/private/var/mobile", isDirectory: true).resourceValues(forKeys: keys) {
+            if let capacity = values.volumeTotalCapacity, capacity > 0 { total = Int64(capacity) }
+            if let available = values.volumeAvailableCapacityForImportantUsage, available > free { free = available }
+        }
+        return StorageInfo(total: total, free: min(free, total > 0 ? total : free))
     }
 }
 
