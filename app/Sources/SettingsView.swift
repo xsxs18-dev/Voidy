@@ -125,7 +125,12 @@ struct ScheduleView: View {
             Section {
                 Toggle("Clean automatically", isOn: $enabled.animation())
             } footer: {
-                Text("A background launch daemon cleans quietly while you use your device. Privacy items can't be scheduled.")
+                Text("Automatic cleaning skips running apps and files in use. Privacy items can't be scheduled.")
+            }
+
+            if store.schedule.configured == true && !store.schedule.enabled {
+                Text("The saved schedule is not active. Save to activate it again.")
+                    .foregroundColor(Theme.orange)
             }
 
             if enabled {
@@ -173,8 +178,8 @@ struct ScheduleView: View {
         }
         .task {
             await store.refreshSchedule()
-            enabled = store.schedule.enabled
-            if store.schedule.enabled {
+            enabled = store.schedule.configured ?? store.schedule.enabled
+            if enabled {
                 hours = store.schedule.hours
                 categories = Set(store.schedule.categories)
             }
@@ -232,13 +237,14 @@ struct ExclusionsView: View {
             Spacer()
             Button {
                 Haptics.tap()
-                withAnimation { store.toggleExclusion(id) }
+                Task { await store.toggleExclusion(id) }
             } label: {
                 Image(systemName: excluded ? "minus.circle.fill" : "plus.circle.fill")
                     .font(.title3)
                     .foregroundColor(excluded ? Theme.red : Theme.mint)
             }
             .buttonStyle(.borderless)
+            .disabled(store.isSavingExclusions || store.isCleaning || store.isScanning)
         }
     }
 }

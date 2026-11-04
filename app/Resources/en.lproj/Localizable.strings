@@ -1,1 +1,8 @@
 /* English is the development language; keys are the English strings. */
+
+/* Cleaning safety and schedule status */
+"Automatic cleaning skips running apps and files in use. Privacy items can't be scheduled." = "Automatic cleaning skips running apps and files in use. Privacy items can't be scheduled.";
+"The saved schedule is not active. Save to activate it again." = "The saved schedule is not active. Save to activate it again.";
+"Running apps and files in use were skipped. Close the apps and try again later." = "Running apps and files in use were skipped. Close the apps and try again later.";
+"%lld files could not be removed" = "%lld files could not be removed";
+"The helper stopped unexpectedly (status %lld)." = "The helper stopped unexpectedly (status %lld).";

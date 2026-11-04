@@ -229,3 +229,10 @@
 "Every 12 hours" = "每 12 小时";
 "No apps excluded." = "没有排除任何 App。";
 "Copy" = "复制";
+
+/* Cleaning safety and schedule status */
+"Automatic cleaning skips running apps and files in use. Privacy items can't be scheduled." = "自动清理会跳过正在运行的应用和使用中的文件。隐私项目无法设置定时清理。";
+"The saved schedule is not active. Save to activate it again." = "已保存的计划尚未启用。请保存以重新启用。";
+"Running apps and files in use were skipped. Close the apps and try again later." = "已跳过正在运行的应用和使用中的文件。请关闭应用后稍后重试。";
+"%lld files could not be removed" = "%lld 个文件无法删除";
+"The helper stopped unexpectedly (status %lld)." = "辅助程序意外停止（状态 %lld）。";

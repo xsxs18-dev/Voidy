@@ -38,6 +38,13 @@ Download it from [Releases](../../releases/latest).
 
 Privacy categories always need an extra confirmation and are never cleaned automatically.
 
+Recommended cleaning removes regular files older than 24 hours, preserves directories and database files,
+and skips running apps (including suspended apps and extensions) and files in use. Voidy no longer
+force-quits Safari or package managers. A scan shows eligible file sizes; the final clean may free less
+because app activity is checked again before deleting. Close an app and retry later if it was skipped.
+Incomplete package downloads are kept. App exclusions also apply to Safari and package-manager caches,
+and changes to exclusions immediately apply to an existing schedule.
+
 ### Insights
 After every scan Voidy looks at the results (on the device, nothing is sent anywhere):
 - Health score from 0 to 100
@@ -100,7 +107,20 @@ Packages end up in `packages/`.
 
 ### Releases
 
-Every push builds both variants on GitHub Actions and publishes them as release `v<version>` (version from `control`), older releases are removed. Pull requests are only built.
+Every push runs isolated cleaning/schedule regression tests and builds both variants on GitHub Actions.
+Only the `Main` branch publishes release `v<version>` (version from `control`). Previous releases remain
+available. Pull requests and other branches are tested and built without publishing.
+
+Run helper regression tests on macOS with:
+
+```sh
+clang -fobjc-arc -fblocks -framework Foundation tests/helper_tests.m -o /tmp/voidy-helper-tests
+/tmp/voidy-helper-tests
+```
+
+The process checks use Apple's private [libproc interfaces](https://github.com/apple-oss-distributions/xnu/blob/main/libsyscall/wrappers/libproc/libproc.h).
+If process inspection fails, cleaning skips the affected work. iOS hardware validation remains necessary;
+desktop tests cannot reproduce a jailbreak's process permissions or all app-specific cache behavior.
 
 ## Project layout
 

@@ -1,6 +1,6 @@
 Package: com.xsxs18.voidy
 Name: Voidy
-Version: 1.0.2
+Version: 1.0.3
 Architecture: iphoneos-arm
 Description: Lightweight system cleaner for rootless and roothide jailbreaks.
  Removes caches, logs, temporary files and package leftovers, manages

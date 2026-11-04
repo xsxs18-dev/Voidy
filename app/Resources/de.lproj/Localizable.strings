@@ -229,3 +229,10 @@
 "Every 12 hours" = "Alle 12 Stunden";
 "No apps excluded." = "Keine Apps ausgeschlossen.";
 "Copy" = "Kopieren";
+
+/* Cleaning safety and schedule status */
+"Automatic cleaning skips running apps and files in use. Privacy items can't be scheduled." = "Die automatische Bereinigung überspringt laufende Apps und verwendete Dateien. Datenschutz-Kategorien können nicht geplant werden.";
+"The saved schedule is not active. Save to activate it again." = "Der gespeicherte Zeitplan ist nicht aktiv. Zum erneuten Aktivieren speichern.";
+"Running apps and files in use were skipped. Close the apps and try again later." = "Laufende Apps und verwendete Dateien wurden übersprungen. Schließe die Apps und versuche es später erneut.";
+"%lld files could not be removed" = "%lld Dateien konnten nicht entfernt werden";
+"The helper stopped unexpectedly (status %lld)." = "Der Helfer wurde unerwartet beendet (Status %lld).";

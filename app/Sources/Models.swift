@@ -35,6 +35,7 @@ struct CleanResponse: Decodable {
     let files: Int64
     let errors: Int64
     let categories: [String: Int64]
+    let skipped: [String]?
 }
 
 struct TweakList: Decodable { let tweaks: [TweakInfo] }
@@ -90,6 +91,7 @@ struct ScheduleStatus: Decodable {
     let enabled: Bool
     let hours: Int
     let categories: [String]
+    var configured: Bool? = nil
 }
 
 struct HistoryEntry: Decodable, Identifiable, Hashable {

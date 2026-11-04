@@ -9,6 +9,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <fts.h>
 #include <spawn.h>
 #include <signal.h>
@@ -18,6 +21,9 @@
 
 extern char **environ;
 extern int proc_pidpath(int pid, void *buffer, uint32_t buffersize);
+extern int proc_listallpids(void *buffer, int buffersize);
+extern int proc_listpidspath(uint32_t type, uint32_t typeinfo, const char *path,
+                            uint32_t pathflags, void *buffer, int buffersize);
 
 #define HELPER_SUFFIX   @"/usr/libexec/voidyhelper"
 #define APP_BUNDLE_NAME @"Voidy.app"
@@ -137,13 +143,19 @@ static int Run(NSArray<NSString *> *argv, NSString **output) {
     NSMutableData *data = [NSMutableData data];
     char buf[4096];
     ssize_t r;
-    while ((r = read(fds[0], buf, sizeof(buf))) > 0) [data appendBytes:buf length:(NSUInteger)r];
+    while (1) {
+        r = read(fds[0], buf, sizeof(buf));
+        if (r < 0 && errno == EINTR) continue;
+        if (r <= 0) break;
+        [data appendBytes:buf length:(NSUInteger)r];
+    }
     close(fds[0]);
 
     int status = 0;
-    waitpid(pid, &status, 0);
+    pid_t waited;
+    do { waited = waitpid(pid, &status, 0); } while (waited < 0 && errno == EINTR);
     if (output) *output = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] ?: @"";
-    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    return waited == pid && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
 static NSString *Tool(NSString *name) {
@@ -159,6 +171,63 @@ static NSString *Tool(NSString *name) {
 static void KillProcess(NSString *name) {
     NSString *killall = Tool(@"killall");
     if (killall) Run(@[ killall, @"-9", name ], NULL);
+}
+
+// Include suspended apps and extensions: both may still own mapped cache files.
+// An unreadable process list must never be interpreted as "all apps are closed".
+static NSSet<NSString *> *RunningClients(void) {
+    int count = proc_listallpids(NULL, 0);
+    if (count <= 0) return nil;
+    int capacity = count + 1024;
+    pid_t *pids = calloc((size_t)capacity, sizeof(pid_t));
+    if (!pids) return nil;
+    count = proc_listallpids(pids, capacity * (int)sizeof(pid_t));
+    if (count <= 0 || count >= capacity) { free(pids); return nil; }
+    NSMutableSet *clients = [NSMutableSet set];
+    for (int i = 0; i < count; i++) {
+        if (pids[i] <= 0) continue;
+        char path[4096] = {0};
+        if (proc_pidpath(pids[i], path, sizeof(path)) <= 0) {
+            if (kill(pids[i], 0) == 0 || errno != ESRCH) { free(pids); return nil; }
+            continue; // exited during enumeration
+        }
+        NSString *executable = @(path);
+        [clients addObject:executable.lastPathComponent];
+        NSString *dir = executable.stringByDeletingLastPathComponent;
+        while (dir.length > 1) {
+            if ([dir.pathExtension isEqualToString:@"app"] || [dir.pathExtension isEqualToString:@"appex"]) {
+                NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile:[dir stringByAppendingPathComponent:@"Info.plist"]];
+                NSString *identifier = info[@"CFBundleIdentifier"];
+                if (![identifier isKindOfClass:NSString.class]) { free(pids); return nil; }
+                [clients addObject:identifier];
+            }
+            dir = dir.stringByDeletingLastPathComponent;
+        }
+    }
+    free(pids);
+    return clients;
+}
+
+static BOOL FileIsInUse(NSString *path) {
+    pid_t pids[4096];
+    // PROC_ALL_PIDS = 1. Keep the file on errors as well as positive matches.
+    return proc_listpidspath(1, 0, path.fileSystemRepresentation, 0, pids, sizeof(pids)) != 0;
+}
+
+static BOOL IsPrivacyCategory(NSString *cat) {
+    return [@[@"safari_history", @"web_data", @"keyboard"] containsObject:cat];
+}
+
+static BOOL CategoryIsBusy(NSString *cat, NSSet *clients) {
+    if (!clients) return YES;
+    NSArray *names = @[];
+    if ([cat hasPrefix:@"safari"] || [cat isEqualToString:@"web_data"])
+        names = @[@"MobileSafari", @"com.apple.mobilesafari", @"com.apple.WebKit.Networking", @"com.apple.WebKit.WebContent"];
+    else if ([cat isEqualToString:@"keyboard"]) names = @[@"kbd"];
+    else if ([cat isEqualToString:@"pkg_cache"] || [cat isEqualToString:@"apt_lists"])
+        names = @[@"Sileo", @"Zebra", @"Cydia", @"apt", @"apt-get", @"dpkg", @"store", @"gpgv", @"https", @"http"];
+    for (NSString *name in names) if ([clients containsObject:name]) return YES;
+    return NO;
 }
 
 #pragma mark - Measuring & removing
@@ -238,6 +307,8 @@ typedef NS_ENUM(int, PTargetMode) {
 @property (nonatomic, copy) BOOL (^filter)(NSString *name);
 @property (nonatomic, copy) NSString *(^labeler)(NSString *name);
 @property (nonatomic, copy) NSSet<NSString *> *skipDirs;
+@property (nonatomic, copy) NSString *owner;
+@property (nonatomic) BOOL preserveDatabases;
 @end
 
 @implementation PTarget
@@ -279,6 +350,13 @@ static BOOL IsReverseDNS(NSString *name) {
 
 static const NSTimeInterval kHour = 3600;
 
+static BOOL IsDatabaseFile(NSString *name) {
+    NSString *lower = name.lowercaseString;
+    for (NSString *part in @[@".db", @".sqlite", @".sqlitedb", @"-wal", @"-shm", @"-journal", @".lock", @"leveldb"])
+        if ([lower containsString:part]) return YES;
+    return [lower isEqualToString:@"lock"];
+}
+
 static NSArray<PTarget *> *TargetsForCategory(NSString *cat, NSSet<NSString *> *excluded) {
     NSMutableArray<PTarget *> *t = [NSMutableArray array];
     NSString *safari = ContainerOf(@"com.apple.mobilesafari");
@@ -286,22 +364,27 @@ static NSArray<PTarget *> *TargetsForCategory(NSString *cat, NSSet<NSString *> *
     if ([cat isEqualToString:@"app_caches"]) {
         NSDictionary *containers = AppContainers();
         for (NSString *bundleID in containers) {
-            if ([excluded containsObject:bundleID]) continue;
+            if ([excluded containsObject:bundleID] || [bundleID isEqualToString:@"com.xsxs18.voidy"]) continue;
             if ([bundleID isEqualToString:@"com.apple.mobilesafari"]) continue; // owned by safari_cache
-            [t addObject:T([containers[bundleID] stringByAppendingPathComponent:@"Library/Caches"], bundleID, PTargetContents)];
+            PTarget *target = T([containers[bundleID] stringByAppendingPathComponent:@"Library/Caches"], bundleID, PTargetContents);
+            target.owner = bundleID;
+            [t addObject:target];
         }
     } else if ([cat isEqualToString:@"safari_cache"]) {
+        if ([excluded containsObject:@"com.apple.mobilesafari"]) return @[];
         [t addObject:T(@"/var/mobile/Library/Caches/com.apple.mobilesafari", @"Safari", PTargetContents)];
         [t addObject:T(@"/var/mobile/Library/Caches/com.apple.WebKit.Networking", @"WebKit Networking", PTargetContents)];
         [t addObject:T(@"/var/mobile/Library/Caches/com.apple.WebKit.WebContent", @"WebKit Content", PTargetContents)];
         if (safari) [t addObject:T([safari stringByAppendingPathComponent:@"Library/Caches"], @"Safari", PTargetContents)];
     } else if ([cat isEqualToString:@"safari_history"]) {
+        if ([excluded containsObject:@"com.apple.mobilesafari"]) return @[];
         NSArray *files = @[ @"History.db", @"History.db-wal", @"History.db-shm", @"History.db-lock", @"RecentlyClosedTabs.plist" ];
         for (NSString *f in files) {
             [t addObject:T([@"/var/mobile/Library/Safari" stringByAppendingPathComponent:f], @"Safari", PTargetSelf)];
             if (safari) [t addObject:T([[safari stringByAppendingPathComponent:@"Library/Safari"] stringByAppendingPathComponent:f], @"Safari", PTargetSelf)];
         }
     } else if ([cat isEqualToString:@"web_data"]) {
+        if ([excluded containsObject:@"com.apple.mobilesafari"]) return @[];
         [t addObject:T(@"/var/mobile/Library/Cookies", @"Cookies", PTargetContents)];
         [t addObject:T(@"/var/mobile/Library/WebKit/WebsiteData", @"Website Data", PTargetContents)];
         if (safari) {
@@ -315,8 +398,10 @@ static NSArray<PTarget *> *TargetsForCategory(NSString *cat, NSSet<NSString *> *
         [t addObject:TAge(JB(@"/var/tmp"), @"Jailbreak", PTargetContents, 24 * kHour)];
         NSDictionary *containers = AppContainers();
         for (NSString *bundleID in containers) {
-            if ([excluded containsObject:bundleID]) continue;
-            [t addObject:TAge([containers[bundleID] stringByAppendingPathComponent:@"tmp"], bundleID, PTargetContents, kHour)];
+            if ([excluded containsObject:bundleID] || [bundleID isEqualToString:@"com.xsxs18.voidy"]) continue;
+            PTarget *target = TAge([containers[bundleID] stringByAppendingPathComponent:@"tmp"], bundleID, PTargetContents, 24 * kHour);
+            target.owner = bundleID;
+            [t addObject:target];
         }
     } else if ([cat isEqualToString:@"crash_logs"]) {
         for (NSString *dir in @[ @"/var/mobile/Library/Logs/CrashReporter", @"/var/mobile/Library/Logs/DiagnosticReports" ]) {
@@ -332,27 +417,27 @@ static NSArray<PTarget *> *TargetsForCategory(NSString *cat, NSSet<NSString *> *
     } else if ([cat isEqualToString:@"pkg_cache"]) {
         NSString *archives = JB(@"/var/cache/apt/archives");
         [t addObject:TFilter(archives, @".deb archives", ^BOOL(NSString *n) { return [n hasSuffix:@".deb"]; })];
-        [t addObject:T([archives stringByAppendingPathComponent:@"partial"], @".deb archives", PTargetContents)];
         [t addObject:TFilter(JB(@"/var/cache/apt"), @"APT cache", ^BOOL(NSString *n) { return [n hasSuffix:@".bin"]; })];
         for (NSString *app in @[ @"org.coolstar.SileoStore", @"xyz.willy.Zebra", @"com.saurik.Cydia", @"com.tigisoftware.Filza" ]) {
+            if ([excluded containsObject:app]) continue;
             NSString *label = [app componentsSeparatedByString:@"."].lastObject;
-            [t addObject:T([@"/var/mobile/Library/Caches" stringByAppendingPathComponent:app], label, PTargetContents)];
-            [t addObject:T([JB(@"/var/mobile/Library/Caches") stringByAppendingPathComponent:app], label, PTargetContents)];
+            for (NSString *root in @[@"/var/mobile/Library/Caches", JB(@"/var/mobile/Library/Caches")]) {
+                PTarget *target = T([root stringByAppendingPathComponent:app], label, PTargetContents);
+                target.owner = app;
+                [t addObject:target];
+            }
         }
     } else if ([cat isEqualToString:@"apt_lists"]) {
         NSString *lists = JB(@"/var/lib/apt/lists");
         [t addObject:TFilter(lists, @"APT lists", ^BOOL(NSString *n) {
             return ![n isEqualToString:@"lock"] && ![n isEqualToString:@"partial"] && ![n hasPrefix:@"."];
         })];
-        [t addObject:T([lists stringByAppendingPathComponent:@"partial"], @"APT lists", PTargetContents)];
         [t addObject:T(JB(@"/var/lib/apt/sileolists"), @"Sileo lists", PTargetContents)];
     } else if ([cat isEqualToString:@"shared_caches"]) {
         NSSet *owned = [NSSet setWithObjects:@"org.coolstar.SileoStore", @"xyz.willy.Zebra", @"com.saurik.Cydia",
                         @"com.tigisoftware.Filza", @"com.xsxs18.voidy", nil];
-        NSSet *appleSafe = [NSSet setWithObjects:@"GeoServices", @"com.apple.parsecd", nil];
         BOOL (^filter)(NSString *) = ^BOOL(NSString *n) {
             if ([owned containsObject:n] || [excluded containsObject:n]) return NO;
-            if ([appleSafe containsObject:n]) return YES;
             return IsReverseDNS(n) && ![n hasPrefix:@"com.apple."];
         };
         PTarget *a = TFilter(@"/var/mobile/Library/Caches", @"", filter);
@@ -366,6 +451,14 @@ static NSArray<PTarget *> *TargetsForCategory(NSString *cat, NSSet<NSString *> *
             return [n hasPrefix:@"dynamic"] || [n hasSuffix:@"-dynamic.lm"] || [n hasSuffix:@"-dynamic-text.dat"];
         })];
     }
+    // Preserve directory identities, active database families and recent files.
+    // This applies equally to manual and scheduled recommended cleaning.
+    if (!IsPrivacyCategory(cat) && ![cat isEqualToString:@"apt_lists"]) {
+        for (PTarget *target in t) {
+            target.minAge = MAX(target.minAge, 24 * kHour);
+            target.preserveDatabases = YES;
+        }
+    }
     return t;
 }
 
@@ -374,25 +467,34 @@ static NSArray<NSString *> *AllCategories(void) {
               @"shared_caches", @"apt_lists", @"safari_history", @"web_data", @"keyboard" ];
 }
 
-static NSArray<NSString *> *ProcessesToStop(NSString *cat) {
-    if ([cat hasPrefix:@"safari"] || [cat isEqualToString:@"web_data"]) return @[ @"MobileSafari" ];
-    if ([cat isEqualToString:@"keyboard"]) return @[ @"kbd" ];
-    if ([cat isEqualToString:@"pkg_cache"] || [cat isEqualToString:@"apt_lists"]) return @[ @"Sileo", @"Zebra" ];
-    return @[];
-}
-
 static BOOL OldEnough(const struct stat *st, NSTimeInterval minAge) {
     if (minAge <= 0) return YES;
     time_t now = time(NULL);
     return (now - st->st_mtime) >= minAge;
 }
 
+// Only the platform/jailbreak entry-point aliases may be followed. A cache
+// symlink must not redirect a privileged clean into Documents or Preferences.
+static BOOL SafeTargetPath(NSString *path) {
+    if (!path.isAbsolutePath || ![path isEqualToString:path.stringByStandardizingPath]) return NO;
+    NSString *part = path;
+    while (part.length > 1) {
+        struct stat st;
+        if (lstat(part.fileSystemRepresentation, &st) == 0 && S_ISLNK(st.st_mode) &&
+            ![@[@"/var", @"/tmp", @"/var/jb"] containsObject:part]) return NO;
+        part = part.stringByDeletingLastPathComponent;
+    }
+    return YES;
+}
+
 // Resolves a target into concrete (path, label) pairs.
 static void CollectEntries(PTarget *t, NSMutableSet<NSString *> *seen, void (^emit)(NSString *path, NSString *label)) {
+    if (!SafeTargetPath(t.path)) return;
     struct stat st;
     if (lstat(t.path.fileSystemRepresentation, &st) != 0) return;
 
     if (t.mode == PTargetSelf) {
+        if (!S_ISREG(st.st_mode)) return;
         NSString *real = RealPath(t.path);
         if ([seen containsObject:real]) return;
         [seen addObject:real];
@@ -407,37 +509,34 @@ static void CollectEntries(PTarget *t, NSMutableSet<NSString *> *seen, void (^em
     if ([seen containsObject:seenKey]) return;
     [seen addObject:seenKey];
 
-    if (t.mode == PTargetContents) {
-        for (NSString *name in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:root error:nil]) {
-            if (t.filter && !t.filter(name)) continue;
-            NSString *p = [root stringByAppendingPathComponent:name];
-            if ([seen containsObject:p]) continue;
-            struct stat cs;
-            if (lstat(p.fileSystemRepresentation, &cs) != 0 || !OldEnough(&cs, t.minAge)) continue;
-            [seen addObject:p];
-            emit(p, t.labeler ? t.labeler(name) : t.label);
-        }
-        return;
-    }
-
     char *paths[] = { (char *)root.fileSystemRepresentation, NULL };
     FTS *fts = fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, NULL);
     if (!fts) return;
     FTSENT *e;
     while ((e = fts_read(fts))) {
+        NSString *relative = [@(e->fts_path) substringFromIndex:MIN(root.length + 1, strlen(e->fts_path))];
+        NSString *top = relative.pathComponents.firstObject ?: @"";
+        if (e->fts_level > 0 && t.mode == PTargetContents && t.filter && !t.filter(top)) {
+            if (e->fts_info == FTS_D) fts_set(fts, e, FTS_SKIP);
+            continue;
+        }
+        if (e->fts_level > 0 && t.preserveDatabases && IsDatabaseFile(@(e->fts_name))) {
+            if (e->fts_info == FTS_D) fts_set(fts, e, FTS_SKIP);
+            continue;
+        }
         if (e->fts_info == FTS_D && e->fts_level == 1 && t.skipDirs &&
             [t.skipDirs containsObject:@(e->fts_name)]) {
             fts_set(fts, e, FTS_SKIP);
             continue;
         }
-        if (e->fts_info != FTS_F && e->fts_info != FTS_SL && e->fts_info != FTS_SLNONE) continue;
+        if (e->fts_info != FTS_F) continue;
         NSString *name = @(e->fts_name);
-        if (t.filter && !t.filter(name)) continue;
+        if (t.mode == PTargetFiles && t.filter && !t.filter(name)) continue;
         if (!OldEnough(e->fts_statp, t.minAge)) continue;
         NSString *p = @(e->fts_path);
         if ([seen containsObject:p]) continue;
         [seen addObject:p];
-        emit(p, t.labeler ? t.labeler(name) : t.label);
+        emit(p, t.labeler ? t.labeler(t.mode == PTargetContents ? top : name) : t.label);
     }
     fts_close(fts);
 }
@@ -469,10 +568,27 @@ static NSArray<NSString *> *ValidCategories(NSArray<NSString *> *requested) {
     return out;
 }
 
+static NSString *ExclusionsPath(void) { return JB(@"/Library/Voidy/exclusions.plist"); }
+
+static BOOL SaveExclusions(NSSet *excluded) {
+    NSString *dir = ExclusionsPath().stringByDeletingLastPathComponent;
+    if (![[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil]) return NO;
+    return [[excluded.allObjects sortedArrayUsingSelector:@selector(compare:)] writeToFile:ExclusionsPath() atomically:YES];
+}
+
+static NSSet *EffectiveExclusions(NSSet *requested, BOOL automatic) {
+    NSArray *saved = [NSArray arrayWithContentsOfFile:ExclusionsPath()];
+    // New settings replace old exclusions embedded in already-loaded launch jobs.
+    if (automatic && saved) return [NSSet setWithArray:saved];
+    NSMutableSet *result = [requested mutableCopy];
+    if (saved) [result addObjectsFromArray:saved];
+    return result;
+}
+
 #pragma mark - scan / clean
 
 static int CmdScan(NSMutableArray<NSString *> *args) {
-    NSSet *excluded = ParseExcluded(args);
+    NSSet *excluded = EffectiveExclusions(ParseExcluded(args), NO);
     NSArray *cats = ValidCategories(args.count ? args : AllCategories());
     NSMutableSet *seen = [NSMutableSet set];
     NSMutableArray *results = [NSMutableArray array];
@@ -515,7 +631,7 @@ static void AppendHistory(uint64_t freed, uint64_t files, NSArray *cats, BOOL au
     NSString *dir = JB(@"/var/mobile/Library/Voidy");
     EnsureMobileDir(dir);
     NSString *file = [dir stringByAppendingPathComponent:@"history.jsonl"];
-    NSDictionary *entry = @{ @"date": @((long long)time(NULL)), @"bytes": @(freed), @"files": @(files),
+    NSDictionary *entry = @{ @"date": @(NSDate.date.timeIntervalSince1970), @"bytes": @(freed), @"files": @(files),
                              @"categories": cats, @"auto": @(automatic) };
     NSMutableData *line = [[NSJSONSerialization dataWithJSONObject:entry options:0 error:nil] mutableCopy];
     [line appendBytes:"\n" length:1];
@@ -528,27 +644,52 @@ static void AppendHistory(uint64_t freed, uint64_t files, NSArray *cats, BOOL au
 }
 
 static int CmdClean(NSMutableArray<NSString *> *args, BOOL automatic) {
-    NSSet *excluded = ParseExcluded(args);
+    NSSet *excluded = EffectiveExclusions(ParseExcluded(args), automatic);
     BOOL dry = [args containsObject:@"--dry-run"];
     [args removeObject:@"--dry-run"];
     NSArray *cats = ValidCategories(args);
     if (cats.count == 0) return Fail(@"No valid categories given");
-
-    NSMutableSet *stop = [NSMutableSet set];
-    for (NSString *cat in cats) [stop addObjectsFromArray:ProcessesToStop(cat)];
-    if (!dry) for (NSString *p in stop) KillProcess(p);
+    if (automatic) {
+        NSMutableArray *safe = [NSMutableArray array];
+        for (NSString *cat in cats) if (!IsPrivacyCategory(cat)) [safe addObject:cat];
+        cats = safe;
+        if (!cats.count) return Fail(@"Privacy categories cannot be cleaned automatically");
+    }
 
     NSMutableSet *seen = [NSMutableSet set];
     __block uint64_t freed = 0, files = 0, errors = 0;
     NSMutableDictionary *perCat = [NSMutableDictionary dictionary];
+    NSMutableSet *skipped = [NSMutableSet set];
 
     for (NSString *cat in cats) {
         __block uint64_t catFreed = 0;
+        __block NSSet *clients = RunningClients();
+        __block NSTimeInterval checked = NSProcessInfo.processInfo.systemUptime;
+        if (CategoryIsBusy(cat, clients)) {
+            [skipped addObject:cat];
+            perCat[cat] = @0;
+            continue;
+        }
         for (PTarget *t in TargetsForCategory(cat, excluded)) {
+            clients = RunningClients();
+            if (CategoryIsBusy(cat, clients) || (t.owner && [clients containsObject:t.owner])) {
+                [skipped addObject:t.owner ?: cat];
+                continue;
+            }
             CollectEntries(t, seen, ^(NSString *path, NSString *label) {
+                NSTimeInterval now = NSProcessInfo.processInfo.systemUptime;
+                if (now - checked >= 0.25) { clients = RunningClients(); checked = now; }
+                if (CategoryIsBusy(cat, clients) || (t.owner && [clients containsObject:t.owner]) ||
+                    ([cat isEqualToString:@"shared_caches"] && [clients containsObject:label]) || FileIsInUse(path)) {
+                    [skipped addObject:t.owner ?: (label.length ? label : cat)];
+                    return;
+                }
+                struct stat current;
+                if (!SafeTargetPath(path) || lstat(path.fileSystemRepresentation, &current) != 0 ||
+                    !S_ISREG(current.st_mode) || !OldEnough(&current, t.minAge)) return;
                 uint64_t b = 0, f = 0;
                 Measure(path, &b, &f);
-                if (dry || Remove(path)) {
+                if (dry || unlink(path.fileSystemRepresentation) == 0) {
                     catFreed += b;
                     files += f;
                 } else {
@@ -560,7 +701,8 @@ static int CmdClean(NSMutableArray<NSString *> *args, BOOL automatic) {
         perCat[cat] = @(catFreed);
     }
     if (!dry) AppendHistory(freed, files, cats, automatic);
-    Out(@{ @"freed": @(freed), @"files": @(files), @"errors": @(errors), @"categories": perCat, @"dryRun": @(dry) });
+    Out(@{ @"freed": @(freed), @"files": @(files), @"errors": @(errors), @"categories": perCat,
+           @"skipped": [skipped.allObjects sortedArrayUsingSelector:@selector(compare:)], @"dryRun": @(dry) });
     return 0;
 }
 
@@ -640,10 +782,14 @@ static int CmdDelete(NSMutableArray<NSString *> *args) {
     NSMutableArray *refused = [NSMutableArray array];
     for (NSString *path in args) {
         NSString *real = RealPath(path);
-        if (!path.isAbsolutePath || !IsDeletableUserPath(real)) { [refused addObject:path]; continue; }
+        struct stat st;
+        if (!SafeTargetPath(path) || !IsDeletableUserPath(real) ||
+            lstat(path.fileSystemRepresentation, &st) != 0 || !S_ISREG(st.st_mode) || FileIsInUse(real)) {
+            [refused addObject:path]; continue;
+        }
         uint64_t b = 0, f = 0;
         Measure(real, &b, &f);
-        if (Remove(real)) { freed += b; files += f; } else [refused addObject:path];
+        if (unlink(real.fileSystemRepresentation) == 0) { freed += b; files += f; } else [refused addObject:path];
     }
     Out(@{ @"freed": @(freed), @"files": @(files), @"errors": @(refused.count), @"refused": refused,
            @"categories": @{} });
@@ -837,12 +983,13 @@ static int CmdOrphans(NSMutableArray<NSString *> *args) {
     BOOL remove = args.count && [args[0] isEqualToString:@"remove"];
     NSString *output = nil;
     if (remove) {
-        int rc = Run(@[ aptGet, @"-y", @"--allow-remove-essential", @"autoremove" ], &output);
+        int rc = Run(@[ aptGet, @"-y", @"autoremove" ], &output);
         if (rc != 0) return Fail([NSString stringWithFormat:@"apt-get failed (%d): %@", rc,
                                   [output substringFromIndex:output.length > 600 ? output.length - 600 : 0]]);
         return OK(@"Orphaned packages removed");
     }
-    Run(@[ aptGet, @"-s", @"autoremove" ], &output);
+    if (Run(@[ aptGet, @"-s", @"autoremove" ], &output) != 0)
+        return Fail(@"Could not check unused packages. Try again after your package manager finishes.");
     NSMutableArray *orphans = [NSMutableArray array];
     NSRegularExpression *re = [NSRegularExpression regularExpressionWithPattern:@"^Remv (\\S+)(?: \\[([^\\]]+)\\])?"
                                                                         options:NSRegularExpressionAnchorsMatchLines error:nil];
@@ -956,6 +1103,17 @@ static NSString *SchedulePlistPath(void) {
     return [DaemonDir() stringByAppendingPathComponent:[SCHEDULE_LABEL stringByAppendingString:@".plist"]];
 }
 
+static BOOL ScheduleLoaded(NSString *launchctl) {
+    return launchctl && Run(@[launchctl, @"print", @"system/" SCHEDULE_LABEL], NULL) == 0;
+}
+
+static BOOL WriteSchedule(NSDictionary *plist, NSString *path) {
+    if (![[NSFileManager defaultManager] createDirectoryAtPath:path.stringByDeletingLastPathComponent
+                                 withIntermediateDirectories:YES attributes:nil error:nil]) return NO;
+    if (![plist writeToFile:path atomically:YES]) return NO;
+    return chown(path.fileSystemRepresentation, 0, 0) == 0 && chmod(path.fileSystemRepresentation, 0644) == 0;
+}
+
 static int CmdSchedule(NSMutableArray<NSString *> *args) {
     NSString *sub = args.count ? args[0] : @"status";
     NSString *path = SchedulePlistPath();
@@ -963,28 +1121,48 @@ static int CmdSchedule(NSMutableArray<NSString *> *args) {
 
     if ([sub isEqualToString:@"status"]) {
         NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:path];
-        if (!plist) { Out(@{ @"enabled": @NO, @"hours": @0, @"categories": @[] }); return 0; }
+        if (!plist) { Out(@{ @"enabled": @NO, @"configured": @NO, @"hours": @24, @"categories": @[] }); return 0; }
         NSArray *pa = plist[@"ProgramArguments"];
         NSMutableArray *cats = [NSMutableArray array];
         for (NSUInteger i = 2; i < pa.count; i++) {
             if ([pa[i] isEqualToString:@"--exclude"]) { i++; continue; }
             [cats addObject:pa[i]];
         }
-        Out(@{ @"enabled": @YES, @"hours": @([plist[@"StartInterval"] integerValue] / 3600), @"categories": cats });
+        Out(@{ @"enabled": @(ScheduleLoaded(launchctl)), @"configured": @YES,
+               @"hours": @([plist[@"StartInterval"] integerValue] / 3600), @"categories": ValidCategories(cats) });
         return 0;
     }
 
-    if (launchctl) Run(@[ launchctl, @"bootout", [@"system/" stringByAppendingString:SCHEDULE_LABEL] ], NULL);
-    [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
-    if ([sub isEqualToString:@"off"]) return OK(nil);
+    if ([sub isEqualToString:@"exclusions"]) {
+        [args removeObjectAtIndex:0];
+        NSSet *excluded = ParseExcluded(args);
+        if (args.count) return Fail(@"usage: schedule exclusions [--exclude ids]");
+        return SaveExclusions(excluded) ? OK(nil) : Fail(@"Could not save excluded apps");
+    }
+
+    if (!launchctl) return Fail(@"launchctl not found; schedule was not changed");
+    BOOL wasLoaded = ScheduleLoaded(launchctl);
+    if ([sub isEqualToString:@"off"]) {
+        if (wasLoaded && Run(@[launchctl, @"bootout", @"system/" SCHEDULE_LABEL], NULL) != 0)
+            return Fail(@"Could not stop automatic cleaning");
+        if (Exists(path) && !Remove(path)) return Fail(@"Could not remove cleaning schedule");
+        return OK(nil);
+    }
 
     if (![sub isEqualToString:@"set"] || args.count < 3) return Fail(@"usage: schedule set <hours> [--exclude ids] <categories>");
     [args removeObjectAtIndex:0];
-    NSInteger hours = MAX(1, [args[0] integerValue]);
+    NSScanner *scanner = [NSScanner scannerWithString:args[0]];
+    NSInteger hours = 0;
+    if (![scanner scanInteger:&hours] || !scanner.isAtEnd || hours < 1 || hours > 168)
+        return Fail(@"Schedule interval must be between 1 and 168 hours");
     [args removeObjectAtIndex:0];
     NSSet *excluded = ParseExcluded(args);
     NSArray *cats = ValidCategories(args);
     if (!cats.count) return Fail(@"No valid categories given");
+    for (NSString *cat in cats) if (IsPrivacyCategory(cat)) return Fail(@"Privacy categories cannot be scheduled");
+    if (cats.count != args.count) return Fail(@"Unknown or duplicate cleaning category");
+    if (!gSelfPath.length || access(gSelfPath.fileSystemRepresentation, X_OK) != 0)
+        return Fail(@"Installed helper path is unavailable");
 
     NSMutableArray *programArgs = [NSMutableArray arrayWithObjects:gSelfPath, @"autoclean", nil];
     if (excluded.count) [programArgs addObjectsFromArray:@[ @"--exclude", [excluded.allObjects componentsJoinedByString:@","] ]];
@@ -993,10 +1171,21 @@ static int CmdSchedule(NSMutableArray<NSString *> *args) {
                              @"StartInterval": @(hours * 3600), @"RunAtLoad": @NO,
                              @"UserName": @"root", @"LowPriorityIO": @YES, @"Nice": @10,
                              @"ProcessType": @"Background" };
-    if (![plist writeToFile:path atomically:YES]) return Fail(@"Could not write launch daemon");
-    chown(path.fileSystemRepresentation, 0, 0);
-    chmod(path.fileSystemRepresentation, 0644);
-    if (launchctl) Run(@[ launchctl, @"bootstrap", @"system", path ], NULL);
+    NSDictionary *previous = [NSDictionary dictionaryWithContentsOfFile:path];
+    if (wasLoaded && Run(@[launchctl, @"bootout", @"system/" SCHEDULE_LABEL], NULL) != 0)
+        return Fail(@"Could not stop the previous schedule; settings were not changed");
+    NSString *output = nil;
+    BOOL success = WriteSchedule(plist, path) &&
+        Run(@[launchctl, @"enable", @"system/" SCHEDULE_LABEL], &output) == 0 &&
+        Run(@[launchctl, @"bootstrap", @"system", path], &output) == 0 && ScheduleLoaded(launchctl);
+    if (!success) {
+        if (ScheduleLoaded(launchctl)) Run(@[launchctl, @"bootout", @"system/" SCHEDULE_LABEL], NULL);
+        BOOL restored = previous ? WriteSchedule(previous, path) : (!Exists(path) || Remove(path));
+        if (restored && wasLoaded) restored = Run(@[launchctl, @"bootstrap", @"system", path], NULL) == 0;
+        return Fail([NSString stringWithFormat:@"Could not activate automatic cleaning. %@ %@",
+                     restored ? @"Previous settings restored." : @"Could not restore previous settings.", output ?: @""]);
+    }
+    if (!SaveExclusions(excluded)) return Fail(@"Schedule activated, but excluded apps could not be saved");
     return OK(nil);
 }
 
@@ -1037,8 +1226,23 @@ int main(int argc, char *argv[]) {
         NSString *cmd = args[0];
         [args removeObjectAtIndex:0];
 
+        // Separate helpers are spawned for UI actions and by launchd. Serialize
+        // mutations with a root-owned lock, automatically released on exit/crash.
+        BOOL readOnly = [@[@"info", @"scan", @"large"] containsObject:cmd] ||
+            ([cmd isEqualToString:@"schedule"] && (!args.count || [args[0] isEqualToString:@"status"]));
+        int lockFD = -1;
+        if (!readOnly) {
+            NSString *dir = JB(@"/Library/Voidy");
+            if (![[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil])
+                return Fail(@"Could not create operation lock directory");
+            lockFD = open([dir stringByAppendingPathComponent:@"operation.lock"].fileSystemRepresentation,
+                          O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0600);
+            if (lockFD < 0 || flock(lockFD, LOCK_EX | LOCK_NB) != 0)
+                return Fail(@"Another Voidy operation is running. Try again when it finishes.");
+        }
+
         if ([cmd isEqualToString:@"info"]) {
-            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.0" });
+            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.0.3" });
             return 0;
         }
         if ([cmd isEqualToString:@"scan"]) return CmdScan(args);

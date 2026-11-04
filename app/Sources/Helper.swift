@@ -6,6 +6,7 @@ enum HelperError: LocalizedError {
     case spawnFailed(Int32)
     case badOutput(String)
     case helper(String)
+    case exited(Int32)
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +18,8 @@ enum HelperError: LocalizedError {
             return String(localized: "Unexpected helper response: \(text)")
         case .helper(let message):
             return message
+        case .exited(let status):
+            return String(localized: "The helper stopped unexpectedly (status \(Int(status))).")
         }
     }
 }
@@ -123,7 +126,15 @@ final class HelperClient {
         let handle = FileHandle(fileDescriptor: fds[0], closeOnDealloc: true)
         let data = handle.readDataToEndOfFile()
         var status: Int32 = 0
-        waitpid(pid, &status, 0)
+        var waited: pid_t
+        repeat { waited = waitpid(pid, &status, 0) } while waited < 0 && errno == EINTR
+        guard waited == pid else { throw HelperError.spawnFailed(errno) }
+        if status != 0 {
+            if let failure = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw HelperError.helper(failure.error)
+            }
+            throw HelperError.exited(status)
+        }
         return data
     }
 }

@@ -55,6 +55,13 @@ iOS 15 and later · rootless and roothide
 
 ## Changelog
 
+**1.0.3**
+- Cleaning no longer force-quits Safari or package managers; running apps and files in use are skipped
+- Preserve cache directories, databases and files newer than 24 hours
+- Fix scheduled-clean activation, failure reporting and app-exclusion updates
+- Prevent overlapping cleans and protect essential packages during autoremove
+- Add regression tests for file safety and schedule recovery
+
 **1.0.2**
 - Free storage now matches the Settings app. Space iOS can clear by itself (caches, offloadable content) counts as free, so Voidy no longer says storage is almost full when it isn't
 

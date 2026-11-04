@@ -235,9 +235,16 @@ struct CleanResultView: View {
             Text("freed · \(Int(response.files)) files removed")
                 .foregroundColor(.secondary)
             if response.errors > 0 {
-                Text("\(Int(response.errors)) items were in use and skipped")
+                Text("\(Int(response.errors)) files could not be removed")
                     .font(.footnote)
                     .foregroundColor(Theme.orange)
+            }
+            if let skipped = response.skipped, !skipped.isEmpty {
+                Text("Running apps and files in use were skipped. Close the apps and try again later.")
+                    .font(.footnote)
+                    .foregroundColor(Theme.orange)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
             Spacer()
             Button {

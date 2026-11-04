@@ -8,6 +8,7 @@ final class AppStore: ObservableObject {
     @Published var results: [String: CategoryResult] = [:]
     @Published var isScanning = false
     @Published var isCleaning = false
+    @Published var isSavingExclusions = false
     @Published var lastClean: CleanResponse?
     @Published var analysis = Analysis()
     @Published var storage = StorageInfo.current()
@@ -53,10 +54,12 @@ final class AppStore: ObservableObject {
     // MARK: - Scan
 
     func scan() async {
-        guard !isScanning else { return }
+        guard !isScanning, !isSavingExclusions else { return }
         isScanning = true
         defer { isScanning = false }
         do {
+            // Migrate existing app preferences to the helper's shared schedule settings.
+            try await helper.perform(["schedule", "exclusions"] + excludeArgs)
             let response = try await helper.call(ScanResponse.self, ["scan"] + excludeArgs + CleanCategory.all.map(\.id))
             var map: [String: CategoryResult] = [:]
             response.categories.forEach { map[$0.id] = $0 }
@@ -80,7 +83,7 @@ final class AppStore: ObservableObject {
 
     @discardableResult
     func clean(_ ids: Set<String>) async -> CleanResponse? {
-        guard !isCleaning, !ids.isEmpty else { return nil }
+        guard !isCleaning, !isScanning, !isSavingExclusions, !ids.isEmpty else { return nil }
         isCleaning = true
         defer { isCleaning = false }
         let ordered = CleanCategory.all.map(\.id).filter { ids.contains($0) }
@@ -103,9 +106,18 @@ final class AppStore: ObservableObject {
         return await clean(ids.isEmpty ? CleanCategory.defaultSelection : ids)
     }
 
-    func toggleExclusion(_ bundleID: String) {
-        if exclusions.contains(bundleID) { exclusions.remove(bundleID) } else { exclusions.insert(bundleID) }
-        reanalyze()
+    func toggleExclusion(_ bundleID: String) async {
+        guard !isSavingExclusions, !isScanning, !isCleaning else { return }
+        isSavingExclusions = true
+        defer { isSavingExclusions = false }
+        var updated = exclusions
+        if updated.contains(bundleID) { updated.remove(bundleID) } else { updated.insert(bundleID) }
+        let args = updated.isEmpty ? [] : ["--exclude", updated.sorted().joined(separator: ",")]
+        do {
+            try await helper.perform(["schedule", "exclusions"] + args)
+            exclusions = updated
+            reanalyze()
+        } catch { report(error) }
     }
 
     // MARK: - Schedule
@@ -179,8 +191,8 @@ final class AppStore: ObservableObject {
                 tab = .clean
             }
         case .exclude(let bundleID):
-            toggleExclusion(bundleID)
-            show(String(localized: "\(AppMeta.name(for: bundleID)) excluded"))
+            await toggleExclusion(bundleID)
+            if exclusions.contains(bundleID) { show(String(localized: "\(AppMeta.name(for: bundleID)) excluded")) }
             await scan()
         case .openTweaks:
             tab = .tweaks

@@ -194,8 +194,10 @@ struct CategoryDetailView: View {
         .swipeActions(edge: .trailing) {
             if isAppList {
                 Button {
-                    store.toggleExclusion(item.name)
-                    Task { await store.scan() }
+                    Task {
+                        await store.toggleExclusion(item.name)
+                        await store.scan()
+                    }
                 } label: {
                     Label("Exclude", systemImage: "hand.raised")
                 }
