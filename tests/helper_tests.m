@@ -158,12 +158,35 @@ static void TestSchedule(NSString *root) {
     assert(!ScheduleLoaded(launchctl) && !Exists(SchedulePlistPath()));
 }
 
+static void TestClean(NSString *root) {
+    gJBRoot = [root stringByAppendingPathComponent:@"clean-jb"];
+    NSString *file = JB(@"/var/lib/apt/lists/example_Packages");
+    NSString *partial = JB(@"/var/lib/apt/lists/partial/download");
+    NSString *lock = JB(@"/var/lib/apt/lists/lock");
+    Write(file, @"cached list", YES);
+    Write(partial, @"incomplete", YES);
+    Write(lock, @"lock", YES);
+    processListFails = YES;
+    assert(CmdClean([@[@"apt_lists"] mutableCopy], YES) == 0 && Exists(file));
+    processListFails = NO;
+    processPath = @"/usr/bin/dpkg";
+    assert(CmdClean([@[@"apt_lists"] mutableCopy], YES) == 0 && Exists(file));
+    processPath = nil;
+    pathInUse = YES;
+    assert(CmdClean([@[@"apt_lists"] mutableCopy], NO) == 0 && Exists(file));
+    pathInUse = NO;
+    assert(CmdClean([@[@"apt_lists", @"--dry-run"] mutableCopy], NO) == 0 && Exists(file));
+    assert(CmdClean([@[@"apt_lists"] mutableCopy], YES) == 0 && !Exists(file));
+    assert(Exists(partial) && Exists(lock) && Exists(file.stringByDeletingLastPathComponent));
+}
+
 int main(void) {
     @autoreleasepool {
         NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
         TestFiles(root);
         TestProcesses(root);
         TestSchedule(root);
+        TestClean(root);
         assert([[NSFileManager defaultManager] removeItemAtPath:root error:nil]);
         puts("All Voidy helper regression tests passed.");
     }
