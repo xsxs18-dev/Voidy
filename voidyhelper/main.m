@@ -176,6 +176,7 @@ static void KillProcess(NSString *name) {
 // Include suspended apps and extensions: both may still own mapped cache files.
 // An unreadable process list must never be interpreted as "all apps are closed".
 static NSSet<NSString *> *RunningClients(void) {
+    @autoreleasepool {
     int count = proc_listallpids(NULL, 0);
     if (count <= 0) return nil;
     int capacity = count + 1024;
@@ -206,6 +207,7 @@ static NSSet<NSString *> *RunningClients(void) {
     }
     free(pids);
     return clients;
+    }
 }
 
 static BOOL FileIsInUse(NSString *path) {
@@ -476,7 +478,8 @@ static BOOL OldEnough(const struct stat *st, NSTimeInterval minAge) {
 // Only the platform/jailbreak entry-point aliases may be followed. A cache
 // symlink must not redirect a privileged clean into Documents or Preferences.
 static BOOL SafeTargetPath(NSString *path) {
-    if (!path.isAbsolutePath || ![path isEqualToString:path.stringByStandardizingPath]) return NO;
+    if (!path.isAbsolutePath || [path.pathComponents containsObject:@".."] ||
+        [path.pathComponents containsObject:@"."]) return NO;
     NSString *part = path;
     while (part.length > 1) {
         struct stat st;
@@ -514,7 +517,9 @@ static void CollectEntries(PTarget *t, NSMutableSet<NSString *> *seen, void (^em
     if (!fts) return;
     FTSENT *e;
     while ((e = fts_read(fts))) {
-        NSString *relative = [@(e->fts_path) substringFromIndex:MIN(root.length + 1, strlen(e->fts_path))];
+        @autoreleasepool {
+        NSString *fullPath = @(e->fts_path);
+        NSString *relative = fullPath.length > root.length ? [fullPath substringFromIndex:root.length + 1] : @"";
         NSString *top = relative.pathComponents.firstObject ?: @"";
         if (e->fts_level > 0 && t.mode == PTargetContents && t.filter && !t.filter(top)) {
             if (e->fts_info == FTS_D) fts_set(fts, e, FTS_SKIP);
@@ -537,6 +542,7 @@ static void CollectEntries(PTarget *t, NSMutableSet<NSString *> *seen, void (^em
         if ([seen containsObject:p]) continue;
         [seen addObject:p];
         emit(p, t.labeler ? t.labeler(t.mode == PTargetContents ? top : name) : t.label);
+        }
     }
     fts_close(fts);
 }

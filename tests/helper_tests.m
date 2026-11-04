@@ -45,7 +45,7 @@ static NSSet *Entries(PTarget *target) {
 
 static void TestFiles(NSString *root) {
     gJBRoot = root;
-    NSString *cache = JB(@"/var/cache/test");
+    NSString *cache = JB(@"/var/cache/Tést-缓存");
     NSString *old = [cache stringByAppendingPathComponent:@"nested/old.bin"];
     NSString *fresh = [cache stringByAppendingPathComponent:@"nested/new.bin"];
     Write(old, @"old cache", YES);
