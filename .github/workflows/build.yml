@@ -98,7 +98,7 @@ jobs:
 
       - name: Write release notes
         env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
         run: |
           {
             echo "## Voidy ${{ needs.build.outputs.version }}"
@@ -115,11 +115,11 @@ jobs:
             echo
             echo "**Installation:** download the matching \`.deb\` below and open it with Sileo, Zebra or Filza."
             echo
-            if [ -n "$COMMIT_MESSAGE" ]; then
-              echo "### Changes"
-              echo
-              echo "$COMMIT_MESSAGE"
-            fi
+            echo "Open Voidy after upgrading to synchronize app exclusions. If a saved schedule is inactive, save it again in Automatic cleaning."
+            echo
+            echo "### Changes"
+            echo
+            awk -v version="$RELEASE_VERSION" '$0 == "## " version { found = 1; next } found && /^## / { exit } found { print }' CHANGELOG.md
           } > notes.md
           cat notes.md
 
