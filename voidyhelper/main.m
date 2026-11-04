@@ -490,6 +490,31 @@ static BOOL SafeTargetPath(NSString *path) {
     return YES;
 }
 
+// Traverse the canonical parent using directory descriptors. If an app replaces
+// a scanned directory with a symlink, deletion cannot escape into its target.
+static BOOL UnlinkRegularFile(NSString *canonicalPath, const struct stat *expected, NSTimeInterval minAge) {
+    if (!canonicalPath.isAbsolutePath) return NO;
+    NSArray<NSString *> *parts = canonicalPath.pathComponents;
+    if (parts.count < 2) return NO;
+    int dir = open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (dir < 0) return NO;
+    for (NSUInteger i = 1; i + 1 < parts.count; i++) {
+        if ([parts[i] isEqualToString:@".."] || [parts[i] isEqualToString:@"."]) { close(dir); return NO; }
+        int next = openat(dir, parts[i].fileSystemRepresentation, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+        close(dir);
+        if (next < 0) return NO;
+        dir = next;
+    }
+    struct stat current;
+    const char *name = parts.lastObject.fileSystemRepresentation;
+    BOOL valid = fstatat(dir, name, &current, AT_SYMLINK_NOFOLLOW) == 0 && S_ISREG(current.st_mode) &&
+        current.st_dev == expected->st_dev && current.st_ino == expected->st_ino &&
+        current.st_size == expected->st_size && current.st_mtime == expected->st_mtime && OldEnough(&current, minAge);
+    BOOL removed = valid && unlinkat(dir, name, 0) == 0;
+    close(dir);
+    return removed;
+}
+
 // Resolves a target into concrete (path, label) pairs.
 static void CollectEntries(PTarget *t, NSMutableSet<NSString *> *seen, void (^emit)(NSString *path, NSString *label)) {
     if (!SafeTargetPath(t.path)) return;
@@ -695,7 +720,7 @@ static int CmdClean(NSMutableArray<NSString *> *args, BOOL automatic) {
                     !S_ISREG(current.st_mode) || !OldEnough(&current, t.minAge)) return;
                 uint64_t b = 0, f = 0;
                 Measure(path, &b, &f);
-                if (dry || unlink(path.fileSystemRepresentation) == 0) {
+                if (dry || UnlinkRegularFile(path, &current, t.minAge)) {
                     catFreed += b;
                     files += f;
                 } else {
@@ -795,7 +820,7 @@ static int CmdDelete(NSMutableArray<NSString *> *args) {
         }
         uint64_t b = 0, f = 0;
         Measure(real, &b, &f);
-        if (unlink(real.fileSystemRepresentation) == 0) { freed += b; files += f; } else [refused addObject:path];
+        if (UnlinkRegularFile(real, &st, 0)) { freed += b; files += f; } else [refused addObject:path];
     }
     Out(@{ @"freed": @(freed), @"files": @(files), @"errors": @(refused.count), @"refused": refused,
            @"categories": @{} });

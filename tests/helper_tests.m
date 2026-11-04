@@ -65,7 +65,11 @@ static void TestFiles(NSString *root) {
     PTarget *target = TAge(cache, @"test", PTargetContents, 86400);
     target.preserveDatabases = YES;
     assert([Entries(target) isEqualToSet:[NSSet setWithObject:RealPath(old)]]);
-    CollectEntries(target, [NSMutableSet set], ^(NSString *path, NSString *label) { assert(unlink(path.fileSystemRepresentation) == 0); });
+    CollectEntries(target, [NSMutableSet set], ^(NSString *path, NSString *label) {
+        struct stat st;
+        assert(lstat(path.fileSystemRepresentation, &st) == 0);
+        assert(UnlinkRegularFile(path, &st, 86400));
+    });
     assert(Exists(fresh) && Exists(outside) && Exists(cache) && Exists(old.stringByDeletingLastPathComponent));
     assert(Entries(T([cache stringByAppendingPathComponent:@"link"], @"", PTargetSelf)).count == 0);
     assert(Entries(T([cache stringByAppendingPathComponent:@"linked-directory"], @"", PTargetContents)).count == 0);
@@ -86,6 +90,18 @@ static void TestFiles(NSString *root) {
     assert(IsDeletableUserPath(RealPath(cache)));
     assert(CmdDelete([NSMutableArray arrayWithObject:cache]) == 0);
     assert(Exists(cache) && Exists(fresh));
+
+    NSString *victim = [cache stringByAppendingPathComponent:@"race/keep.txt"];
+    Write(victim, @"original", YES);
+    struct stat original;
+    assert(lstat(victim.fileSystemRepresentation, &original) == 0);
+    NSString *canonicalVictim = RealPath(victim);
+    assert([[NSFileManager defaultManager] moveItemAtPath:victim.stringByDeletingLastPathComponent
+                                                toPath:[cache stringByAppendingPathComponent:@"parked"] error:nil]);
+    assert(symlink(outside.stringByDeletingLastPathComponent.fileSystemRepresentation,
+                   victim.stringByDeletingLastPathComponent.fileSystemRepresentation) == 0);
+    assert(!UnlinkRegularFile(canonicalVictim, &original, 86400));
+    assert(Exists(outside));
 }
 
 static void TestProcesses(NSString *root) {
