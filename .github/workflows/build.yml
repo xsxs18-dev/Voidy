@@ -11,18 +11,24 @@ permissions:
 jobs:
   test:
     name: Cleaning and schedule regression tests
-    runs-on: macos-15
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - name: Run isolated helper tests
         run: |
           clang -fobjc-arc -fblocks -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -framework Foundation tests/helper_tests.m -o /tmp/voidy-helper-tests
           /tmp/voidy-helper-tests
+      - name: Test app metadata failure handling
+        run: |
+          clang -fobjc-arc -fobjc-exceptions -Wall -Wextra -Wno-unused-parameter -framework Foundation tests/app_metadata_tests.m -o /tmp/voidy-app-metadata-tests
+          /tmp/voidy-app-metadata-tests
+      - name: Test app icon configuration and installer
+        run: python3 tests/package_tests.py
 
   build:
     needs: test
     name: ${{ matrix.scheme }}
-    runs-on: macos-15
+    runs-on: macos-15-intel
     strategy:
       fail-fast: false
       matrix:
@@ -70,6 +76,7 @@ jobs:
             ar t "out/$name" | grep -qx 'data.tar.xz' || { echo "data archive is not xz"; exit 1; }
             dpkg-deb --info "out/$name"
             dpkg-deb --contents "out/$name"
+            python3 tests/package_tests.py "out/$name"
           done
 
       - uses: actions/upload-artifact@v4

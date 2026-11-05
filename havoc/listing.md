@@ -55,6 +55,11 @@ iOS 15 and later · rootless and roothide
 
 ## Changelog
 
+**1.0.4**
+- Fix unsafe app-name and icon lookups when opening Excluded apps
+- Correct the Home Screen icon declaration and re-register the app on upgrade
+- Add regression tests for unavailable app metadata and icon installation
+
 **1.0.3**
 - Cleaning no longer force-quits Safari or package managers; running apps and files in use are skipped
 - Preserve cache directories, databases and files newer than 24 hours

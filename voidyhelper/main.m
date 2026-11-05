@@ -1273,7 +1273,7 @@ int main(int argc, char *argv[]) {
         }
 
         if ([cmd isEqualToString:@"info"]) {
-            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.0.3" });
+            Out(@{ @"jbroot": gJBRoot, @"scheme": Scheme(), @"helper": gSelfPath ?: @"", @"version": @"1.0.4" });
             return 0;
         }
         if ([cmd isEqualToString:@"scan"]) return CmdScan(args);

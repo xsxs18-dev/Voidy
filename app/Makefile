@@ -5,8 +5,9 @@ include $(THEOS)/makefiles/common.mk
 
 APPLICATION_NAME = Voidy
 
-Voidy_FILES = $(wildcard Sources/*.swift)
-Voidy_SWIFTFLAGS = -parse-as-library
+Voidy_FILES = $(wildcard Sources/*.swift Sources/*.m)
+Voidy_CFLAGS = -fobjc-arc -fobjc-exceptions
+Voidy_SWIFTFLAGS = -parse-as-library -import-objc-header Sources/AppMetadataBridge.h
 Voidy_FRAMEWORKS = UIKit SwiftUI
 Voidy_CODESIGN_FLAGS = -Sentitlements.plist
 

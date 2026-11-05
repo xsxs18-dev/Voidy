@@ -193,7 +193,8 @@ struct ExclusionsView: View {
     @EnvironmentObject private var store: AppStore
 
     private var candidates: [String] {
-        (store.results["app_caches"]?.items.map(\.name) ?? []).filter { !store.exclusions.contains($0) }
+        Array(Set(store.results["app_caches"]?.items.map(\.name) ?? []))
+            .filter { !store.exclusions.contains($0) }.sorted()
     }
 
     var body: some View {

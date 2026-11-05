@@ -116,7 +116,14 @@ Run helper regression tests on macOS with:
 ```sh
 clang -fobjc-arc -fblocks -framework Foundation tests/helper_tests.m -o /tmp/voidy-helper-tests
 /tmp/voidy-helper-tests
+clang -fobjc-arc -fobjc-exceptions -framework Foundation tests/app_metadata_tests.m -o /tmp/voidy-app-metadata-tests
+/tmp/voidy-app-metadata-tests
+python3 tests/package_tests.py
 ```
+
+The app metadata tests simulate missing apps, private API exceptions, different runtime signatures,
+and object lifetimes after autorelease pools drain. Package tests check the included PNG icons and
+installer error handling; pass a `.deb` path to validate a built package as well.
 
 The process checks use Apple's private [libproc interfaces](https://github.com/apple-oss-distributions/xnu/blob/main/libsyscall/wrappers/libproc/libproc.h).
 If process inspection fails, cleaning skips the affected work. iOS hardware validation remains necessary;

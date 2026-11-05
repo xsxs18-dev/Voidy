@@ -1,4 +1,6 @@
 #!/bin/sh
+PATH=/var/jb/usr/bin:/var/jb/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
     for app in /var/jb/Applications/Voidy.app /Applications/Voidy.app; do
         if command -v uicache >/dev/null 2>&1; then

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.4
+
+- Fix unsafe app-name and icon lookup used by Excluded apps and other app lists. Private API calls
+  now stay in an Objective-C exception boundary, validate runtime signatures and retain returned
+  objects correctly. Missing or inaccessible metadata falls back to the bundle ID and a neutral icon.
+- Remove the nonexistent asset-catalog icon reference; use the included PNG icons for the Home Screen.
+- Register Voidy's icon explicitly during installation with a rootless-aware tool path. Require
+  uikittools and report registration errors instead of silently leaving the app unregistered.
+- Deduplicate exclusion-list candidates and add metadata failure, ownership, icon-package and
+  installer regression tests. Use Intel macOS CI runners after arm64 capacity failures.
+
+Device verification on the reported iPhone XR / iOS 18.4 remains necessary; no crash report from
+that device was available during development.
+
 ## 1.0.3
 
 - Stop force-killing Safari and package managers during manual and scheduled cleaning.

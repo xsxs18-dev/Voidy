@@ -215,30 +215,16 @@ enum AppMeta {
         var result = bundleID
         if bundleID == "com.apple.springboard" {
             result = "SpringBoard"
-        } else if let proxy = applicationProxy(for: bundleID),
-                  let localized = proxy.value(forKey: "localizedName") as? String, !localized.isEmpty {
+        } else if let localized = VDAppDisplayName(bundleID), !localized.isEmpty {
             result = localized
         }
         names[bundleID] = result
         return result
     }
 
-    private static func applicationProxy(for bundleID: String) -> NSObject? {
-        typealias ProxyFn = @convention(c) (AnyClass, Selector, NSString) -> NSObject?
-        let selector = NSSelectorFromString("applicationProxyForIdentifier:")
-        guard let cls = NSClassFromString("LSApplicationProxy"),
-              let method = class_getClassMethod(cls, selector) else { return nil }
-        let fn = unsafeBitCast(method_getImplementation(method), to: ProxyFn.self)
-        return fn(cls, selector, bundleID as NSString)
-    }
-
     static func icon(for bundleID: String) -> UIImage? {
         if let cached = icons[bundleID] { return cached }
-        typealias IconFn = @convention(c) (AnyClass, Selector, NSString, Int32, CGFloat) -> UIImage?
-        let selector = NSSelectorFromString("_applicationIconImageForBundleIdentifier:format:scale:")
-        guard let method = class_getClassMethod(UIImage.self, selector) else { return nil }
-        let fn = unsafeBitCast(method_getImplementation(method), to: IconFn.self)
-        let image = fn(UIImage.self, selector, bundleID as NSString, 2, UIScreen.main.scale)
+        let image = VDAppIcon(bundleID, Double(UIScreen.main.scale)) as? UIImage
         if let image = image { icons[bundleID] = image }
         return image
     }
