@@ -128,6 +128,8 @@ installer error handling; pass a `.deb` path to validate a built package as well
 The process checks use Apple's private [libproc interfaces](https://github.com/apple-oss-distributions/xnu/blob/main/libsyscall/wrappers/libproc/libproc.h).
 If process inspection fails, cleaning skips the affected work. iOS hardware validation remains necessary;
 desktop tests cannot reproduce a jailbreak's process permissions or all app-specific cache behavior.
+## Known issues
+Voidy crashes by tapping on excluded Apps (im working on it)
 
 ## Project layout
 
